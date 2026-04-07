@@ -1,4 +1,4 @@
-/* ── Canteen Manager – App Logic ─────────────────── */
+/* ── Canteen Manager – App Logic (Firebase/Firestore) ── */
 (function () {
   'use strict';
 
@@ -7,7 +7,6 @@
   const $$ = (s) => document.querySelectorAll(s);
   const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
   function fmt(n) { return '₹' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 }); }
   function today() { return new Date().toISOString().slice(0, 10); }
   function sanitize(str) {
@@ -16,24 +15,15 @@
     return div.innerHTML;
   }
 
-  // ── Data Store (localStorage) ─────────────────────
-  const KEYS = { itemsIn: 'cm_itemsIn', itemsOut: 'cm_itemsOut', expenses: 'cm_expenses' };
+  // ── In-memory data (synced from Firestore) ────────
+  let itemsIn = [];
+  let itemsOut = [];
+  let expenses = [];
 
-  function load(key) {
-    try { return JSON.parse(localStorage.getItem(key)) || []; }
-    catch { return []; }
-  }
-  function save(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
-
-  let itemsIn  = load(KEYS.itemsIn);
-  let itemsOut = load(KEYS.itemsOut);
-  let expenses = load(KEYS.expenses);
-
-  function persist() {
-    save(KEYS.itemsIn, itemsIn);
-    save(KEYS.itemsOut, itemsOut);
-    save(KEYS.expenses, expenses);
-  }
+  // ── Firestore references ──────────────────────────
+  const colItemsIn  = db.collection('itemsIn');
+  const colItemsOut = db.collection('itemsOut');
+  const colExpenses = db.collection('expenses');
 
   // ── Toast ─────────────────────────────────────────
   function toast(msg, isError) {
@@ -59,50 +49,75 @@
     if (page === 'inventory') renderInventory();
     if (page === 'expenses')  renderExpenses();
     if (page === 'pnl')       renderPnl();
-    // close mobile sidebar
     $('#sidebar').classList.remove('open');
   }
 
   navItems.forEach(n => n.addEventListener('click', (e) => { e.preventDefault(); navigate(n.dataset.page); }));
   $('#menuToggle').addEventListener('click', () => $('#sidebar').classList.toggle('open'));
 
-  // Set today's date
   $('#dateDisplay').textContent = new Date().toLocaleDateString('en-IN', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
   $$('input[type="date"]').forEach(inp => inp.value = today());
+
+  // ── Real-time Firestore listeners ─────────────────
+  function startListeners() {
+    colItemsIn.orderBy('createdAt', 'desc').onSnapshot((snap) => {
+      itemsIn = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      refreshActivePage();
+    });
+
+    colItemsOut.orderBy('createdAt', 'desc').onSnapshot((snap) => {
+      itemsOut = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      refreshActivePage();
+    });
+
+    colExpenses.orderBy('createdAt', 'desc').onSnapshot((snap) => {
+      expenses = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      refreshActivePage();
+    });
+  }
+
+  function refreshActivePage() {
+    const activePage = document.querySelector('.nav-item.active')?.dataset.page;
+    if (activePage === 'dashboard') refreshDashboard();
+    if (activePage === 'items-in')  renderItemsIn();
+    if (activePage === 'items-out') renderItemsOut();
+    if (activePage === 'inventory') renderInventory();
+    if (activePage === 'expenses')  renderExpenses();
+    if (activePage === 'pnl')       renderPnl();
+  }
 
   // ── Items In ──────────────────────────────────────
   $('#formItemsIn').addEventListener('submit', (e) => {
     e.preventDefault();
     const record = {
-      id: uid(),
       date: $('#inDate').value,
       item: $('#inItem').value.trim(),
       qty: parseFloat($('#inQty').value),
       unit: $('#inUnit').value,
       cost: parseFloat($('#inPrice').value),
-      supplier: $('#inSupplier').value.trim()
+      supplier: $('#inSupplier').value.trim(),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
     };
     if (!record.item || !record.qty || !record.cost) return toast('Please fill all required fields', true);
-    itemsIn.unshift(record);
-    persist();
-    e.target.reset();
-    $$('input[type="date"]').forEach(inp => inp.value = today());
-    renderItemsIn();
-    toast('Item added to stock');
+    colItemsIn.add(record).then(() => {
+      e.target.reset();
+      $$('input[type="date"]').forEach(inp => inp.value = today());
+      toast('Item added to stock');
+    }).catch(() => toast('Failed to save', true));
   });
 
   function renderItemsIn(filter = '') {
     const tbody = $('#tableItemsIn tbody');
     const filtered = itemsIn.filter(r =>
       r.item.toLowerCase().includes(filter.toLowerCase()) ||
-      r.supplier.toLowerCase().includes(filter.toLowerCase())
+      (r.supplier || '').toLowerCase().includes(filter.toLowerCase())
     );
     tbody.innerHTML = filtered.length === 0
       ? '<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:32px">No purchase records yet</td></tr>'
       : filtered.map(r => `<tr>
           <td>${sanitize(r.date)}</td><td>${sanitize(r.item)}</td><td>${r.qty}</td><td>${sanitize(r.unit)}</td>
           <td>${fmt(r.cost)}</td><td>${sanitize(r.supplier || '—')}</td>
-          <td><button class="btn-delete" data-id="${r.id}" data-type="in">Delete</button></td>
+          <td><button class="btn-delete" data-id="${sanitize(r.id)}" data-type="in">Delete</button></td>
         </tr>`).join('');
   }
 
@@ -112,21 +127,20 @@
   $('#formItemsOut').addEventListener('submit', (e) => {
     e.preventDefault();
     const record = {
-      id: uid(),
       date: $('#outDate').value,
       item: $('#outItem').value.trim(),
       qty: parseFloat($('#outQty').value),
       unit: $('#outUnit').value,
       amount: parseFloat($('#outPrice').value),
-      customer: $('#outCustomer').value.trim()
+      customer: $('#outCustomer').value.trim(),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
     };
     if (!record.item || !record.qty || !record.amount) return toast('Please fill all required fields', true);
-    itemsOut.unshift(record);
-    persist();
-    e.target.reset();
-    $$('input[type="date"]').forEach(inp => inp.value = today());
-    renderItemsOut();
-    toast('Sale recorded');
+    colItemsOut.add(record).then(() => {
+      e.target.reset();
+      $$('input[type="date"]').forEach(inp => inp.value = today());
+      toast('Sale recorded');
+    }).catch(() => toast('Failed to save', true));
   });
 
   function renderItemsOut(filter = '') {
@@ -140,7 +154,7 @@
       : filtered.map(r => `<tr>
           <td>${sanitize(r.date)}</td><td>${sanitize(r.item)}</td><td>${r.qty}</td><td>${sanitize(r.unit)}</td>
           <td>${fmt(r.amount)}</td><td>${sanitize(r.customer || '—')}</td>
-          <td><button class="btn-delete" data-id="${r.id}" data-type="out">Delete</button></td>
+          <td><button class="btn-delete" data-id="${sanitize(r.id)}" data-type="out">Delete</button></td>
         </tr>`).join('');
   }
 
@@ -150,19 +164,18 @@
   $('#formExpenses').addEventListener('submit', (e) => {
     e.preventDefault();
     const record = {
-      id: uid(),
       date: $('#expDate').value,
       category: $('#expCategory').value,
       amount: parseFloat($('#expAmount').value),
-      note: $('#expNote').value.trim()
+      note: $('#expNote').value.trim(),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
     };
     if (!record.amount) return toast('Please enter an amount', true);
-    expenses.unshift(record);
-    persist();
-    e.target.reset();
-    $$('input[type="date"]').forEach(inp => inp.value = today());
-    renderExpenses();
-    toast('Expense recorded');
+    colExpenses.add(record).then(() => {
+      e.target.reset();
+      $$('input[type="date"]').forEach(inp => inp.value = today());
+      toast('Expense recorded');
+    }).catch(() => toast('Failed to save', true));
   });
 
   function renderExpenses(filter = '') {
@@ -176,7 +189,7 @@
       : filtered.map(r => `<tr>
           <td>${sanitize(r.date)}</td><td>${sanitize(r.category)}</td><td>${fmt(r.amount)}</td>
           <td>${sanitize(r.note || '—')}</td>
-          <td><button class="btn-delete" data-id="${r.id}" data-type="exp">Delete</button></td>
+          <td><button class="btn-delete" data-id="${sanitize(r.id)}" data-type="exp">Delete</button></td>
         </tr>`).join('');
   }
 
@@ -185,16 +198,14 @@
   // ── Delete handler (delegated) ────────────────────
   document.addEventListener('click', (e) => {
     if (!e.target.classList.contains('btn-delete')) return;
+    if (!confirm('Delete this record?')) return;
     const id = e.target.dataset.id;
     const type = e.target.dataset.type;
-    if (type === 'in')  itemsIn  = itemsIn.filter(r => r.id !== id);
-    if (type === 'out') itemsOut = itemsOut.filter(r => r.id !== id);
-    if (type === 'exp') expenses = expenses.filter(r => r.id !== id);
-    persist();
-    // Re-render the current active page
-    const activePage = document.querySelector('.nav-item.active')?.dataset.page;
-    if (activePage) navigate(activePage);
-    toast('Record deleted');
+    let promise;
+    if (type === 'in')  promise = colItemsIn.doc(id).delete();
+    if (type === 'out') promise = colItemsOut.doc(id).delete();
+    if (type === 'exp') promise = colExpenses.doc(id).delete();
+    if (promise) promise.then(() => toast('Record deleted')).catch(() => toast('Failed to delete', true));
   });
 
   // ── Inventory ─────────────────────────────────────
@@ -309,7 +320,6 @@
       netEl.textContent = fmt(totNet);
       netEl.className = 'stat-value ' + (totNet >= 0 ? 'profit' : 'loss');
 
-      // Table
       const tbody = $('#tablePnl tbody');
       tbody.innerHTML = data.map((m, i) => {
         const margin = m.revenue > 0 ? ((m.net / m.revenue) * 100).toFixed(1) : '—';
@@ -322,7 +332,6 @@
         </tr>`;
       }).join('');
 
-      // Total row
       const totalMargin = totRev > 0 ? ((totNet / totRev) * 100).toFixed(1) : '—';
       const totItemCost = data.reduce((s, m) => s + m.itemCost, 0);
       const totOtherExp = data.reduce((s, m) => s + m.otherExp, 0);
@@ -334,7 +343,6 @@
         <td class="${totNet >= 0 ? 'profit' : 'loss'}"><strong>${fmt(totNet)}</strong></td>
         <td><strong>${totalMargin}${totalMargin !== '—' ? '%' : ''}</strong></td>`;
 
-      // Chart
       if (pnlChart) pnlChart.destroy();
       pnlChart = new Chart($('#chartPnlDetailed'), {
         type: 'bar',
@@ -376,7 +384,6 @@
     profitEl.className = 'stat-value ' + (netProfit >= 0 ? 'profit' : 'loss');
     $('#statInventory').textContent = buildInventory().length;
 
-    // Monthly P&L chart
     const year = new Date().getFullYear();
     const monthly = computeMonthlyPnl(year);
 
@@ -398,7 +405,6 @@
       }
     });
 
-    // Doughnut chart
     if (dashChart2) dashChart2.destroy();
     dashChart2 = new Chart($('#chartRevenueCost'), {
       type: 'doughnut',
@@ -416,7 +422,6 @@
       }
     });
 
-    // Recent transactions
     const recent = [
       ...itemsIn.slice(0, 10).map(r => ({ date: r.date, type: 'Purchase', item: r.item, qty: r.qty, amount: -r.cost })),
       ...itemsOut.slice(0, 10).map(r => ({ date: r.date, type: 'Sale', item: r.item, qty: r.qty, amount: r.amount })),
@@ -435,15 +440,33 @@
   }
 
   // ── Clear Data ────────────────────────────────────
-  $('#clearDataBtn').addEventListener('click', () => {
-    if (!confirm('Are you sure? This will delete ALL canteen data permanently.')) return;
-    itemsIn = []; itemsOut = []; expenses = [];
-    persist();
-    navigate('dashboard');
-    toast('All data cleared');
+  $('#clearDataBtn').addEventListener('click', async () => {
+    if (!confirm('Are you sure? This will delete ALL canteen data permanently from the cloud.')) return;
+    try {
+      const batch = db.batch();
+      const [snap1, snap2, snap3] = await Promise.all([
+        colItemsIn.get(), colItemsOut.get(), colExpenses.get()
+      ]);
+      snap1.docs.forEach(d => batch.delete(d.ref));
+      snap2.docs.forEach(d => batch.delete(d.ref));
+      snap3.docs.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+      toast('All data cleared');
+    } catch {
+      toast('Failed to clear data', true);
+    }
   });
 
-  // ── Init ──────────────────────────────────────────
-  navigate('dashboard');
+  // ── Auth & Init ───────────────────────────────────
+  auth.signInAnonymously()
+    .then(() => {
+      startListeners();
+      navigate('dashboard');
+      $('#loadingOverlay').classList.add('hidden');
+    })
+    .catch((err) => {
+      console.error('Auth error:', err);
+      $('#loadingOverlay').querySelector('p').textContent = 'Connection failed. Check Firebase config.';
+    });
 
 })();
