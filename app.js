@@ -5,7 +5,7 @@
   // ── Helpers ────────────────────────────────────────
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => document.querySelectorAll(s);
-  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const MONTHS = ['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'];
 
   function fmt(n) { return '₹' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 }); }
   function today() { return new Date().toISOString().slice(0, 10); }
@@ -274,38 +274,63 @@
     toast('Inventory exported');
   });
 
-  // ── P&L Computation ───────────────────────────────
-  function computeMonthlyPnl(year) {
+  // ── P&L Computation (Financial Year: Apr–Mar) ────
+  // fyStart = the calendar year in which April falls
+  // e.g. FY 2025-26 → fyStart=2025 covers Apr 2025 – Mar 2026
+  function computeMonthlyPnl(fyStart) {
     const monthly = MONTHS.map(() => ({ revenue: 0, itemCost: 0, otherExp: 0 }));
+
+    function fyIndex(dateStr) {
+      const d = new Date(dateStr);
+      const m = d.getMonth(); // 0=Jan .. 11=Dec
+      const y = d.getFullYear();
+      // Apr(3)=idx0 .. Dec(11)=idx8, Jan(0)=idx9 .. Mar(2)=idx11
+      if (m >= 3) { // Apr-Dec → belongs to FY starting in same year
+        return y === fyStart ? m - 3 : -1;
+      } else { // Jan-Mar → belongs to FY starting in previous year
+        return y === fyStart + 1 ? m + 9 : -1;
+      }
+    }
+
     itemsOut.forEach(r => {
-      const d = new Date(r.date);
-      if (d.getFullYear() === year) monthly[d.getMonth()].revenue += r.amount;
+      const idx = fyIndex(r.date);
+      if (idx >= 0) monthly[idx].revenue += r.amount;
     });
     itemsIn.forEach(r => {
-      const d = new Date(r.date);
-      if (d.getFullYear() === year) monthly[d.getMonth()].itemCost += r.cost;
+      const idx = fyIndex(r.date);
+      if (idx >= 0) monthly[idx].itemCost += r.cost;
     });
     expenses.forEach(r => {
-      const d = new Date(r.date);
-      if (d.getFullYear() === year) monthly[d.getMonth()].otherExp += r.amount;
+      const idx = fyIndex(r.date);
+      if (idx >= 0) monthly[idx].otherExp += r.amount;
     });
     return monthly.map(m => ({ ...m, totalCost: m.itemCost + m.otherExp, net: m.revenue - m.itemCost - m.otherExp }));
   }
 
-  function getYears() {
-    const years = new Set();
-    [...itemsIn, ...itemsOut, ...expenses].forEach(r => years.add(new Date(r.date).getFullYear()));
-    if (years.size === 0) years.add(new Date().getFullYear());
-    return [...years].sort((a, b) => b - a);
+  function getFYears() {
+    const fys = new Set();
+    [...itemsIn, ...itemsOut, ...expenses].forEach(r => {
+      const d = new Date(r.date);
+      const m = d.getMonth();
+      // If Jan-Mar, FY started previous year; if Apr-Dec, FY started same year
+      fys.add(m >= 3 ? d.getFullYear() : d.getFullYear() - 1);
+    });
+    if (fys.size === 0) {
+      const now = new Date();
+      fys.add(now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1);
+    }
+    return [...fys].sort((a, b) => b - a);
   }
+
+  function fyLabel(y) { return y + '–' + String(y + 1).slice(2); }
 
   // ── P&L Rendering ────────────────────────────────
   let pnlChart = null;
 
   function renderPnl() {
     const yearSel = $('#pnlYear');
-    const years = getYears();
-    yearSel.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+    const years = getFYears();
+    yearSel.innerHTML = years.map(y => `<option value="${y}">FY ${fyLabel(y)}</option>`).join('');
 
     function draw() {
       const year = parseInt(yearSel.value);
@@ -384,8 +409,9 @@
     profitEl.className = 'stat-value ' + (netProfit >= 0 ? 'profit' : 'loss');
     $('#statInventory').textContent = buildInventory().length;
 
-    const year = new Date().getFullYear();
-    const monthly = computeMonthlyPnl(year);
+    const now = new Date();
+    const currentFY = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+    const monthly = computeMonthlyPnl(currentFY);
 
     if (dashChart1) dashChart1.destroy();
     dashChart1 = new Chart($('#chartMonthlyPnl'), {
