@@ -75,11 +75,13 @@
   let itemsIn = [];
   let itemsOut = [];
   let expenses = [];
+  let sales = [];
 
   // ── Firestore references ──────────────────────────
   const colItemsIn  = db.collection('itemsIn');
   const colItemsOut = db.collection('itemsOut');
   const colExpenses = db.collection('expenses');
+  const colSales    = db.collection('sales');
 
   // ── Toast ─────────────────────────────────────────
   function toast(msg, isError) {
@@ -93,7 +95,7 @@
   // ── Navigation ────────────────────────────────────
   const navItems = $$('.nav-item');
   const pages = $$('.page');
-  const titles = { dashboard:'Dashboard', 'items-in':'Items In', 'items-out':'Items Out', inventory:'Inventory', expenses:'Other Expenses', pnl:'P&L Statement', changelog:'Changelog' };
+  const titles = { dashboard:'Dashboard', 'items-in':'Items In', 'items-out':'Items Out', inventory:'Inventory', expenses:'Other Expenses', sales:'Sales', pnl:'P&L Statement', changelog:'Changelog' };
 
   function navigate(page) {
     navItems.forEach(n => n.classList.toggle('active', n.dataset.page === page));
@@ -104,6 +106,7 @@
     if (page === 'items-out') renderItemsOut();
     if (page === 'inventory') renderInventory();
     if (page === 'expenses')  renderExpenses();
+    if (page === 'sales')     renderSales();
     if (page === 'pnl')       renderPnl();
     $('#sidebar').classList.remove('open');
   }
@@ -130,6 +133,11 @@
       expenses = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       refreshActivePage();
     });
+
+    colSales.orderBy('createdAt', 'desc').onSnapshot((snap) => {
+      sales = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      refreshActivePage();
+    });
   }
 
   function refreshActivePage() {
@@ -139,6 +147,7 @@
     if (activePage === 'items-out') renderItemsOut();
     if (activePage === 'inventory') renderInventory();
     if (activePage === 'expenses')  renderExpenses();
+    if (activePage === 'sales')     renderSales();
     if (activePage === 'pnl')       renderPnl();
   }
 
@@ -448,6 +457,7 @@
     if (type === 'in')  promise = colItemsIn.doc(id).delete();
     if (type === 'out') promise = colItemsOut.doc(id).delete();
     if (type === 'exp') promise = colExpenses.doc(id).delete();
+    if (type === 'sale') promise = colSales.doc(id).delete();
     if (promise) promise.then(() => toast('Record deleted')).catch(() => toast('Failed to delete', true));
   });
 
@@ -571,6 +581,76 @@
       lastFilteredExpenses.map(r => [r.date, r.category, r.amount, r.note || '']),
       ['Date','Category','Amount','Description'],
       'canteen_expenses'
+    );
+  });
+
+  // ── Sales ─────────────────────────────────────────
+  $('#formSales').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const record = {
+      date: $('#saleDate').value,
+      type: $('#saleType').value,
+      amount: parseFloat($('#saleAmount').value),
+      details: $('#saleDetails').value.trim(),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    if (!record.amount) return toast('Please enter an amount', true);
+    colSales.add(record).then(() => {
+      e.target.reset();
+      $$('input[type="date"]').forEach(inp => inp.value = today());
+      toast('Sale recorded');
+    }).catch(() => toast('Failed to save', true));
+  });
+
+  function getSalesFilters() {
+    return {
+      dateFrom: $('#filterSaleDateFrom').value,
+      dateTo: $('#filterSaleDateTo').value,
+      type: $('#filterSaleType').value,
+      details: $('#filterSaleDetails').value.trim().toLowerCase()
+    };
+  }
+
+  function renderSales() {
+    const f = getSalesFilters();
+    const tbody = $('#tableSales tbody');
+    let filtered = sales.filter(r => {
+      if (f.dateFrom && r.date < f.dateFrom) return false;
+      if (f.dateTo && r.date > f.dateTo) return false;
+      if (f.type && r.type !== f.type) return false;
+      if (f.details && !(r.details || '').toLowerCase().includes(f.details)) return false;
+      return true;
+    });
+    filtered = applySort(filtered, 'tableSales', (r, col) => {
+      if (col === 'amount') return r[col] || 0;
+      return r[col] || '';
+    });
+    lastFilteredSales = filtered;
+    tbody.innerHTML = filtered.length === 0
+      ? '<tr><td colspan="5" style="text-align:center;color:var(--text-light);padding:32px">No sales recorded yet</td></tr>'
+      : filtered.map(r => `<tr>
+          <td>${sanitize(r.date)}</td><td>${sanitize(r.type)}</td><td>${fmt(r.amount)}</td>
+          <td>${sanitize(r.details || '—')}</td>
+          <td><button class="btn-delete" data-id="${sanitize(r.id)}" data-type="sale">Delete</button></td>
+        </tr>`).join('');
+  }
+  let lastFilteredSales = [];
+
+  ['filterSaleDateFrom','filterSaleDateTo','filterSaleDetails'].forEach(id => {
+    $('#' + id).addEventListener('input', () => renderSales());
+  });
+  $('#filterSaleType').addEventListener('change', () => renderSales());
+  $('#clearFiltersSales').addEventListener('click', () => {
+    ['filterSaleDateFrom','filterSaleDateTo','filterSaleDetails'].forEach(id => { $('#' + id).value = ''; });
+    $('#filterSaleType').value = '';
+    renderSales();
+  });
+
+  $('#btnExportSales').addEventListener('click', () => {
+    exportXlsx(
+      lastFilteredSales.map(r => [r.date, r.type, r.amount, r.details || '']),
+      ['Date','Sale Type','Amount','Details'],
+      'canteen_sales'
     );
   });
 
@@ -787,12 +867,13 @@
     if (!confirm('Are you sure? This will delete ALL canteen data permanently from the cloud.')) return;
     try {
       const batch = db.batch();
-      const [snap1, snap2, snap3] = await Promise.all([
-        colItemsIn.get(), colItemsOut.get(), colExpenses.get()
+      const [snap1, snap2, snap3, snap4] = await Promise.all([
+        colItemsIn.get(), colItemsOut.get(), colExpenses.get(), colSales.get()
       ]);
       snap1.docs.forEach(d => batch.delete(d.ref));
       snap2.docs.forEach(d => batch.delete(d.ref));
       snap3.docs.forEach(d => batch.delete(d.ref));
+      snap4.docs.forEach(d => batch.delete(d.ref));
       await batch.commit();
       toast('All data cleared');
     } catch {
@@ -860,7 +941,7 @@
   // Logout
   $('#logoutBtn').addEventListener('click', () => {
     auth.signOut().then(() => {
-      itemsIn = []; itemsOut = []; expenses = [];
+      itemsIn = []; itemsOut = []; expenses = []; sales = [];
       showLogin();
       toast('Logged out');
     });
@@ -892,6 +973,7 @@
   bindSortHeaders('tableItemsOut', renderItemsOut);
   bindSortHeaders('tableInventory', renderInventory);
   bindSortHeaders('tableExpenses', renderExpenses);
+  bindSortHeaders('tableSales', renderSales);
   bindSortHeaders('tablePnl', renderPnl);
 
 })();

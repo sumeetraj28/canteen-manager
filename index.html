@@ -61,6 +61,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9 12h6M12 9v6"/></svg>
         Other Expenses
       </a>
+      <a href="#" class="nav-item" data-page="sales">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        Sales
+      </a>
       <a href="#" class="nav-item" data-page="pnl">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 5 5-9"/></svg>
         P&amp;L Statement
@@ -449,6 +453,68 @@
               </thead>
               <tbody></tbody>
               <tfoot><tr id="expMonthlyTotalRow"></tr></tfoot>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== SALES ==================== -->
+      <section class="page" id="page-sales">
+        <div class="form-card">
+          <h3>Add Sale</h3>
+          <form id="formSales" autocomplete="off">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="saleDate">Date</label>
+                <input type="date" id="saleDate" required />
+              </div>
+              <div class="form-group">
+                <label for="saleType">Sale Type</label>
+                <select id="saleType">
+                  <option value="Counter">Counter</option>
+                  <option value="Online">Online</option>
+                  <option value="Bulk Order">Bulk Order</option>
+                  <option value="Catering">Catering</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="saleAmount">Amount (₹)</label>
+                <input type="number" id="saleAmount" min="0" step="0.01" placeholder="Sale amount" required />
+              </div>
+              <div class="form-group full-span">
+                <label for="saleDetails">Details</label>
+                <input type="text" id="saleDetails" placeholder="Brief description of the sale" />
+              </div>
+            </div>
+            <button type="submit" class="btn-primary">+ Add Sale</button>
+          </form>
+        </div>
+        <div class="table-card">
+          <div class="table-header">
+            <h3>Sales Records</h3>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn-secondary btn-sm" id="btnExportSales">Export .xlsx</button>
+              <button class="btn-sm" id="clearFiltersSales">Clear Filters</button>
+            </div>
+          </div>
+          <div class="filter-row">
+            <input type="date" id="filterSaleDateFrom" class="filter-input" title="From date" />
+            <input type="date" id="filterSaleDateTo" class="filter-input" title="To date" />
+            <select id="filterSaleType" class="filter-input">
+              <option value="">All Types</option>
+              <option value="Counter">Counter</option>
+              <option value="Online">Online</option>
+              <option value="Bulk Order">Bulk Order</option>
+              <option value="Catering">Catering</option>
+              <option value="Other">Other</option>
+            </select>
+            <input type="text" id="filterSaleDetails" class="filter-input" placeholder="Search details..." />
+          </div>
+          <div class="table-wrapper">
+            <table id="tableSales">
+              <thead><tr><th class="sortable" data-col="date">Date <span class="sort-icon"></span></th><th class="sortable" data-col="type">Sale Type <span class="sort-icon"></span></th><th class="sortable" data-col="amount">Amount (₹) <span class="sort-icon"></span></th><th class="sortable" data-col="details">Details <span class="sort-icon"></span></th><th>Action</th></tr></thead>
+              <tbody></tbody>
             </table>
           </div>
         </div>
