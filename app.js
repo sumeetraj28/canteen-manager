@@ -172,6 +172,8 @@
     const record = {
       date: $('#outDate').value,
       item: $('#outItem').value.trim(),
+      category: $('#outCategory').value,
+      person: $('#outPerson').value,
       qty: parseFloat($('#outQty').value),
       unit: $('#outUnit').value,
       amount: parseFloat($('#outPrice').value),
@@ -186,22 +188,48 @@
     }).catch(() => toast('Failed to save', true));
   });
 
-  function renderItemsOut(filter = '') {
+  function getItemsOutFilters() {
+    return {
+      dateFrom: $('#filterOutDateFrom').value,
+      dateTo: $('#filterOutDateTo').value,
+      item: $('#filterOutItem').value.trim().toLowerCase(),
+      category: $('#filterOutCategory').value,
+      person: $('#filterOutPerson').value
+    };
+  }
+
+  function renderItemsOut() {
+    const f = getItemsOutFilters();
     const tbody = $('#tableItemsOut tbody');
-    const filtered = itemsOut.filter(r =>
-      r.item.toLowerCase().includes(filter.toLowerCase()) ||
-      (r.customer || '').toLowerCase().includes(filter.toLowerCase())
-    );
+    const filtered = itemsOut.filter(r => {
+      if (f.dateFrom && r.date < f.dateFrom) return false;
+      if (f.dateTo && r.date > f.dateTo) return false;
+      if (f.item && !r.item.toLowerCase().includes(f.item)) return false;
+      if (f.category && (r.category || '') !== f.category) return false;
+      if (f.person && (r.person || '') !== f.person) return false;
+      return true;
+    });
     tbody.innerHTML = filtered.length === 0
-      ? '<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:32px">No sales records yet</td></tr>'
+      ? '<tr><td colspan="9" style="text-align:center;color:var(--text-light);padding:32px">No sales records yet</td></tr>'
       : filtered.map(r => `<tr>
-          <td>${sanitize(r.date)}</td><td>${sanitize(r.item)}</td><td>${r.qty}</td><td>${sanitize(r.unit)}</td>
+          <td>${sanitize(r.date)}</td><td>${sanitize(r.item)}</td>
+          <td>${sanitize(r.category || '—')}</td><td>${sanitize(r.person || '—')}</td>
+          <td>${r.qty}</td><td>${sanitize(r.unit)}</td>
           <td>${fmt(r.amount)}</td><td>${sanitize(r.customer || '—')}</td>
           <td><button class="btn-delete" data-id="${sanitize(r.id)}" data-type="out">Delete</button></td>
         </tr>`).join('');
   }
 
-  $('#searchItemsOut').addEventListener('input', (e) => renderItemsOut(e.target.value));
+  ['filterOutDateFrom','filterOutDateTo','filterOutItem','filterOutCategory','filterOutPerson'].forEach(id => {
+    $('#' + id).addEventListener('input', () => renderItemsOut());
+    $('#' + id).addEventListener('change', () => renderItemsOut());
+  });
+  $('#clearFiltersOut').addEventListener('click', () => {
+    ['filterOutDateFrom','filterOutDateTo','filterOutItem'].forEach(id => { $('#' + id).value = ''; });
+    $('#filterOutCategory').value = '';
+    $('#filterOutPerson').value = '';
+    renderItemsOut();
+  });
 
   // ── Expenses ──────────────────────────────────────
   $('#formExpenses').addEventListener('submit', (e) => {
