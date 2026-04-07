@@ -377,6 +377,15 @@
   });
 
   // ── Items Out ─────────────────────────────────────
+  // Auto-calculate sale amount = qty × rate
+  function autoCalcSaleAmt() {
+    const qty = parseFloat($('#outQty').value) || 0;
+    const rate = parseFloat($('#outRate').value) || 0;
+    $('#outPrice').value = qty && rate ? (qty * rate).toFixed(2) : '';
+  }
+  $('#outQty').addEventListener('input', autoCalcSaleAmt);
+  $('#outRate').addEventListener('input', autoCalcSaleAmt);
+
   $('#formItemsOut').addEventListener('submit', (e) => {
     e.preventDefault();
     const record = {
