@@ -960,6 +960,7 @@
           <td>${sanitize(r.details || '—')}</td>
           <td><button class="btn-delete" data-id="${sanitize(r.id)}" data-type="sale">Delete</button></td>
         </tr>`).join('');
+    renderSalesSummary();
   }
   let lastFilteredSales = [];
 
@@ -979,6 +980,82 @@
       ['Date','Sale Type','Amount','Details'],
       'canteen_sales'
     );
+  });
+
+  // ── Sales: Sale Type Month-wise Summary ───────────
+  function renderSalesSummary() {
+    const yearSel = $('#salesFY');
+    const years = getFYears();
+    const prev = yearSel.value;
+    yearSel.innerHTML = years.map(y => `<option value="${y}">FY ${fyLabel(y)}</option>`).join('');
+    if (prev && years.includes(parseInt(prev))) yearSel.value = prev;
+    drawSalesSummary();
+  }
+
+  function drawSalesSummary() {
+    const fyStart = parseInt($('#salesFY').value);
+
+    function fyIdx(dateStr) {
+      const d = new Date(dateStr);
+      const m = d.getMonth(), y = d.getFullYear();
+      if (m >= 3) return y === fyStart ? m - 3 : -1;
+      return y === fyStart + 1 ? m + 9 : -1;
+    }
+
+    const typeMap = {};
+    sales.forEach(r => {
+      const idx = fyIdx(r.date);
+      if (idx < 0) return;
+      const key = (r.type || 'Unknown').trim();
+      const lk = key.toLowerCase();
+      if (!typeMap[lk]) typeMap[lk] = { name: key, months: MONTHS.map(() => 0) };
+      typeMap[lk].months[idx] += r.amount;
+    });
+
+    lastSaleTypeSummary = Object.values(typeMap);
+
+    const tbody = $('#tableSaleTypeMonthly tbody');
+    const monthTotals = MONTHS.map(() => 0);
+    let grandTotal = 0;
+
+    tbody.innerHTML = lastSaleTypeSummary.length === 0
+      ? '<tr><td colspan="14" style="text-align:center;color:var(--text-light);padding:32px">No data for this FY</td></tr>'
+      : lastSaleTypeSummary.filter(r => r.months.some(v => v)).map(r => {
+          const rowTotal = r.months.reduce((s, v) => s + v, 0);
+          r.months.forEach((v, i) => { monthTotals[i] += v; });
+          grandTotal += rowTotal;
+          return `<tr>
+            <td><strong>${sanitize(r.name)}</strong></td>
+            ${r.months.map(v => `<td>${v ? fmt(v) : '\u2014'}</td>`).join('')}
+            <td><strong>${fmt(rowTotal)}</strong></td>
+          </tr>`;
+        }).join('');
+
+    if (grandTotal > 0) {
+      $('#saleTypeTotalRow').innerHTML = `
+        <td><strong>TOTAL</strong></td>
+        ${monthTotals.map(v => `<td><strong>${v ? fmt(v) : '\u2014'}</strong></td>`).join('')}
+        <td><strong>${fmt(grandTotal)}</strong></td>`;
+    } else {
+      $('#saleTypeTotalRow').innerHTML = '';
+    }
+  }
+
+  let lastSaleTypeSummary = [];
+
+  $('#salesFY').addEventListener('change', drawSalesSummary);
+
+  $('#btnExportSaleTypeSummary').addEventListener('click', () => {
+    const fy = $('#salesFY').value;
+    const rows = [['Sale Type', ...MONTHS, 'Total']];
+    lastSaleTypeSummary.filter(r => r.months.some(v => v)).forEach(r => {
+      rows.push([r.name, ...r.months, r.months.reduce((a, b) => a + b, 0)]);
+    });
+    if (rows.length <= 1) return toast('No data to export', true);
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Sale Type Summary');
+    XLSX.writeFile(wb, 'canteen_sale_type_summary_FY' + fyLabel(fy) + '_' + today() + '.xlsx');
   });
 
   // ── P&L Computation (Financial Year: Apr–Mar) ────

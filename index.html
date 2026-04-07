@@ -689,6 +689,25 @@
             </table>
           </div>
         </div>
+
+        <div class="table-card">
+          <div class="table-header">
+            <h3>Sale Type &mdash; Month-wise Summary</h3>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn-secondary btn-sm" id="btnExportSaleTypeSummary">Export .xlsx</button>
+              <select id="salesFY" class="filter-input" style="width:auto"></select>
+            </div>
+          </div>
+          <div class="table-wrapper">
+            <table id="tableSaleTypeMonthly">
+              <thead>
+                <tr><th>Sale Type</th><th>Apr</th><th>May</th><th>Jun</th><th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Total</th></tr>
+              </thead>
+              <tbody></tbody>
+              <tfoot><tr id="saleTypeTotalRow"></tr></tfoot>
+            </table>
+          </div>
+        </div>
       </section>
 
       <!-- ==================== P&L STATEMENT ==================== -->
