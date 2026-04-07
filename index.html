@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Canteen Manager</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">🍽️</div>
+      <h1>Canteen<span>Manager</span></h1>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" data-page="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </a>
+      <a href="#" class="nav-item" data-page="items-in">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+        Items In
+      </a>
+      <a href="#" class="nav-item" data-page="items-out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+        Items Out
+      </a>
+      <a href="#" class="nav-item" data-page="inventory">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4M4 7l8 4M4 7v10l8 4m0-10v10"/></svg>
+        Inventory
+      </a>
+      <a href="#" class="nav-item" data-page="expenses">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9 12h6M12 9v6"/></svg>
+        Other Expenses
+      </a>
+      <a href="#" class="nav-item" data-page="pnl">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 5 5-9"/></svg>
+        P&amp;L Statement
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <button id="clearDataBtn" class="btn-clear">Reset All Data</button>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <main class="main-content">
+    <header class="top-bar">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <h2 class="page-title" id="pageTitle">Dashboard</h2>
+      <div class="top-bar-right">
+        <span class="date-display" id="dateDisplay"></span>
+      </div>
+    </header>
+
+    <div class="page-container">
+      <!-- ==================== DASHBOARD ==================== -->
+      <section class="page active" id="page-dashboard">
+        <div class="stat-cards">
+          <div class="stat-card card-green">
+            <div class="stat-icon">📈</div>
+            <div class="stat-info">
+              <span class="stat-label">Total Revenue</span>
+              <span class="stat-value" id="statRevenue">₹0</span>
+            </div>
+          </div>
+          <div class="stat-card card-red">
+            <div class="stat-icon">📉</div>
+            <div class="stat-info">
+              <span class="stat-label">Total Cost (Items + Expenses)</span>
+              <span class="stat-value" id="statCost">₹0</span>
+            </div>
+          </div>
+          <div class="stat-card card-blue">
+            <div class="stat-icon">💰</div>
+            <div class="stat-info">
+              <span class="stat-label">Net Profit / Loss</span>
+              <span class="stat-value" id="statProfit">₹0</span>
+            </div>
+          </div>
+          <div class="stat-card card-orange">
+            <div class="stat-icon">📦</div>
+            <div class="stat-info">
+              <span class="stat-label">Inventory Items</span>
+              <span class="stat-value" id="statInventory">0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="charts-row">
+          <div class="chart-card">
+            <h3>Month-wise Profit &amp; Loss</h3>
+            <canvas id="chartMonthlyPnl"></canvas>
+          </div>
+          <div class="chart-card">
+            <h3>Revenue vs Cost Breakdown</h3>
+            <canvas id="chartRevenueCost"></canvas>
+          </div>
+        </div>
+
+        <div class="charts-row">
+          <div class="chart-card full-width">
+            <h3>Recent Transactions</h3>
+            <div class="table-wrapper">
+              <table id="recentTransactions">
+                <thead><tr><th>Date</th><th>Type</th><th>Item</th><th>Qty</th><th>Amount (₹)</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== ITEMS IN ==================== -->
+      <section class="page" id="page-items-in">
+        <div class="form-card">
+          <h3>Add Items In (Purchases / Stock In)</h3>
+          <form id="formItemsIn" autocomplete="off">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="inDate">Date</label>
+                <input type="date" id="inDate" required />
+              </div>
+              <div class="form-group">
+                <label for="inItem">Item Name</label>
+                <input type="text" id="inItem" placeholder="e.g. Rice, Oil, Vegetables" required />
+              </div>
+              <div class="form-group">
+                <label for="inQty">Quantity</label>
+                <input type="number" id="inQty" min="0.01" step="0.01" placeholder="Qty" required />
+              </div>
+              <div class="form-group">
+                <label for="inUnit">Unit</label>
+                <select id="inUnit">
+                  <option value="kg">kg</option>
+                  <option value="ltr">ltr</option>
+                  <option value="pcs">pcs</option>
+                  <option value="pkt">pkt</option>
+                  <option value="dozen">dozen</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="inPrice">Total Cost (₹)</label>
+                <input type="number" id="inPrice" min="0" step="0.01" placeholder="Total cost" required />
+              </div>
+              <div class="form-group">
+                <label for="inSupplier">Supplier</label>
+                <input type="text" id="inSupplier" placeholder="Supplier name" />
+              </div>
+            </div>
+            <button type="submit" class="btn-primary">+ Add Item In</button>
+          </form>
+        </div>
+        <div class="table-card">
+          <div class="table-header">
+            <h3>Purchase History</h3>
+            <input type="text" id="searchItemsIn" class="search-input" placeholder="Search items..." />
+          </div>
+          <div class="table-wrapper">
+            <table id="tableItemsIn">
+              <thead><tr><th>Date</th><th>Item</th><th>Qty</th><th>Unit</th><th>Cost (₹)</th><th>Supplier</th><th>Action</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== ITEMS OUT ==================== -->
+      <section class="page" id="page-items-out">
+        <div class="form-card">
+          <h3>Add Items Out (Sales / Consumption)</h3>
+          <form id="formItemsOut" autocomplete="off">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="outDate">Date</label>
+                <input type="date" id="outDate" required />
+              </div>
+              <div class="form-group">
+                <label for="outItem">Item Name</label>
+                <input type="text" id="outItem" placeholder="e.g. Meals, Snacks, Beverages" required />
+              </div>
+              <div class="form-group">
+                <label for="outQty">Quantity</label>
+                <input type="number" id="outQty" min="0.01" step="0.01" placeholder="Qty" required />
+              </div>
+              <div class="form-group">
+                <label for="outUnit">Unit</label>
+                <select id="outUnit">
+                  <option value="pcs">pcs</option>
+                  <option value="plate">plate</option>
+                  <option value="kg">kg</option>
+                  <option value="ltr">ltr</option>
+                  <option value="cup">cup</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="outPrice">Sale Amount (₹)</label>
+                <input type="number" id="outPrice" min="0" step="0.01" placeholder="Revenue" required />
+              </div>
+              <div class="form-group">
+                <label for="outCustomer">Customer / Note</label>
+                <input type="text" id="outCustomer" placeholder="Optional note" />
+              </div>
+            </div>
+            <button type="submit" class="btn-primary">+ Add Item Out</button>
+          </form>
+        </div>
+        <div class="table-card">
+          <div class="table-header">
+            <h3>Sales History</h3>
+            <input type="text" id="searchItemsOut" class="search-input" placeholder="Search items..." />
+          </div>
+          <div class="table-wrapper">
+            <table id="tableItemsOut">
+              <thead><tr><th>Date</th><th>Item</th><th>Qty</th><th>Unit</th><th>Amount (₹)</th><th>Note</th><th>Action</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== INVENTORY ==================== -->
+      <section class="page" id="page-inventory">
+        <div class="inventory-header">
+          <h3>Current Inventory</h3>
+          <div class="inventory-actions">
+            <input type="text" id="searchInventory" class="search-input" placeholder="Search inventory..." />
+            <button class="btn-secondary" id="btnExportInventory">Export CSV</button>
+          </div>
+        </div>
+        <div class="stat-cards small">
+          <div class="stat-card card-blue">
+            <div class="stat-info">
+              <span class="stat-label">Total Unique Items</span>
+              <span class="stat-value" id="invTotalItems">0</span>
+            </div>
+          </div>
+          <div class="stat-card card-orange">
+            <div class="stat-info">
+              <span class="stat-label">Low Stock Alerts</span>
+              <span class="stat-value" id="invLowStock">0</span>
+            </div>
+          </div>
+          <div class="stat-card card-green">
+            <div class="stat-info">
+              <span class="stat-label">Total Stock Value (₹)</span>
+              <span class="stat-value" id="invTotalValue">₹0</span>
+            </div>
+          </div>
+        </div>
+        <div class="table-card">
+          <div class="table-wrapper">
+            <table id="tableInventory">
+              <thead><tr><th>Item</th><th>Qty In</th><th>Qty Out</th><th>Balance</th><th>Unit</th><th>Avg Cost/Unit (₹)</th><th>Stock Value (₹)</th><th>Status</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== EXPENSES ==================== -->
+      <section class="page" id="page-expenses">
+        <div class="form-card">
+          <h3>Add Other Expense</h3>
+          <form id="formExpenses" autocomplete="off">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="expDate">Date</label>
+                <input type="date" id="expDate" required />
+              </div>
+              <div class="form-group">
+                <label for="expCategory">Category</label>
+                <select id="expCategory">
+                  <option value="Salary">Salary / Wages</option>
+                  <option value="Rent">Rent</option>
+                  <option value="Electricity">Electricity</option>
+                  <option value="Gas">Gas / Fuel</option>
+                  <option value="Water">Water</option>
+                  <option value="Maintenance">Maintenance</option>
+                  <option value="Equipment">Equipment</option>
+                  <option value="Transport">Transport</option>
+                  <option value="Miscellaneous">Miscellaneous</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="expAmount">Amount (₹)</label>
+                <input type="number" id="expAmount" min="0" step="0.01" placeholder="Amount" required />
+              </div>
+              <div class="form-group full-span">
+                <label for="expNote">Description</label>
+                <input type="text" id="expNote" placeholder="Brief description of the expense" />
+              </div>
+            </div>
+            <button type="submit" class="btn-primary">+ Add Expense</button>
+          </form>
+        </div>
+        <div class="table-card">
+          <div class="table-header">
+            <h3>Expense Records</h3>
+            <input type="text" id="searchExpenses" class="search-input" placeholder="Search expenses..." />
+          </div>
+          <div class="table-wrapper">
+            <table id="tableExpenses">
+              <thead><tr><th>Date</th><th>Category</th><th>Amount (₹)</th><th>Description</th><th>Action</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== P&L STATEMENT ==================== -->
+      <section class="page" id="page-pnl">
+        <div class="pnl-controls">
+          <h3>Profit &amp; Loss Statement</h3>
+          <div class="pnl-filters">
+            <select id="pnlYear"></select>
+          </div>
+        </div>
+
+        <div class="pnl-summary-cards">
+          <div class="stat-card card-green">
+            <div class="stat-info">
+              <span class="stat-label">Total Revenue</span>
+              <span class="stat-value" id="pnlRevenue">₹0</span>
+            </div>
+          </div>
+          <div class="stat-card card-red">
+            <div class="stat-info">
+              <span class="stat-label">Total Expenses</span>
+              <span class="stat-value" id="pnlExpenses">₹0</span>
+            </div>
+          </div>
+          <div class="stat-card card-blue">
+            <div class="stat-info">
+              <span class="stat-label">Net Profit / Loss</span>
+              <span class="stat-value" id="pnlNet">₹0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="chart-card full-width">
+          <h3>Month-wise P&amp;L Overview</h3>
+          <canvas id="chartPnlDetailed"></canvas>
+        </div>
+
+        <div class="table-card">
+          <h3>Month-wise Breakdown</h3>
+          <div class="table-wrapper">
+            <table id="tablePnl">
+              <thead>
+                <tr>
+                  <th>Month</th>
+                  <th>Revenue (₹)</th>
+                  <th>Item Costs (₹)</th>
+                  <th>Other Expenses (₹)</th>
+                  <th>Total Costs (₹)</th>
+                  <th>Net P&amp;L (₹)</th>
+                  <th>Margin %</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+              <tfoot>
+                <tr id="pnlTotalRow">
+                  <td><strong>TOTAL</strong></td>
+                  <td></td><td></td><td></td><td></td><td></td><td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Toast notification -->
+  <div class="toast" id="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
