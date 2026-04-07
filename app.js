@@ -458,15 +458,69 @@
   });
 
   // ── Auth & Init ───────────────────────────────────
-  auth.signInAnonymously()
-    .then(() => {
-      startListeners();
-      navigate('dashboard');
-      $('#loadingOverlay').classList.add('hidden');
-    })
-    .catch((err) => {
-      console.error('Auth error:', err);
-      $('#loadingOverlay').querySelector('p').textContent = 'Connection failed. Check Firebase config.';
+  const loginScreen = $('#loginScreen');
+  const loginForm = $('#loginForm');
+  const loginError = $('#loginError');
+  const loginBtn = $('#loginBtn');
+
+  function showApp(user) {
+    const email = user.email;
+    loginScreen.classList.add('hidden');
+    $('#loadingOverlay').classList.add('hidden');
+    $('#sidebarUser').textContent = email;
+    $('#userBadge').textContent = email;
+    startListeners();
+    navigate('dashboard');
+  }
+
+  function showLogin() {
+    loginScreen.classList.remove('hidden');
+    $('#loadingOverlay').classList.add('hidden');
+  }
+
+  // Check if already logged in
+  auth.onAuthStateChanged((user) => {
+    if (user) {
+      showApp(user);
+    } else {
+      showLogin();
+    }
+  });
+
+  // Login form submit
+  loginForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    loginError.textContent = '';
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'Signing in...';
+
+    const email = $('#loginEmail').value.trim();
+    const password = $('#loginPassword').value;
+
+    auth.signInWithEmailAndPassword(email, password)
+      .then((cred) => {
+        showApp(cred.user);
+      })
+      .catch((err) => {
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Sign In';
+        if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+          loginError.textContent = 'Invalid email or password.';
+        } else if (err.code === 'auth/too-many-requests') {
+          loginError.textContent = 'Too many attempts. Try again later.';
+        } else {
+          loginError.textContent = 'Login failed. Please try again.';
+        }
+      });
+  });
+
+  // Logout
+  $('#logoutBtn').addEventListener('click', () => {
+    auth.signOut().then(() => {
+      itemsIn = []; itemsOut = []; expenses = [];
+      showLogin();
+      toast('Logged out');
     });
+  });
 
 })();

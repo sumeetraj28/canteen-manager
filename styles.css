@@ -147,6 +147,37 @@ input:focus,select:focus{outline:none;border-color:var(--primary);box-shadow:0 0
 .toast.show{transform:translateY(0);opacity:1}
 .toast.error{background:var(--red)}
 
+/* ── Login Screen ─────────────────────────────────── */
+.login-screen{
+  position:fixed;inset:0;background:linear-gradient(135deg,#1a1d23 0%,#282c34 50%,#1a1d23 100%);
+  display:flex;align-items:center;justify-content:center;z-index:10000;transition:opacity .4s;
+}
+.login-screen.hidden{opacity:0;pointer-events:none}
+.login-card{
+  background:var(--surface);border-radius:16px;padding:40px;width:100%;max-width:400px;
+  box-shadow:0 20px 60px rgba(0,0,0,.3);
+}
+.login-brand{text-align:center;margin-bottom:32px}
+.login-icon{font-size:3rem;display:block;margin-bottom:12px}
+.login-brand h1{font-size:1.5rem;font-weight:700;color:var(--text)}
+.login-brand h1 span{color:var(--primary);font-weight:400}
+.login-brand p{font-size:.85rem;color:var(--text-light);margin-top:6px}
+.login-field{margin-bottom:16px;display:flex;flex-direction:column;gap:6px}
+.login-field label{font-size:.78rem;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.3px}
+.login-field input{padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.92rem;background:var(--bg);transition:border-color .2s}
+.login-field input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,.12)}
+.login-error{color:var(--red);font-size:.82rem;min-height:20px;margin-bottom:8px;text-align:center}
+.btn-login{
+  width:100%;padding:13px;background:var(--primary);color:#fff;border:none;
+  border-radius:var(--radius-sm);font-size:.95rem;font-weight:600;cursor:pointer;transition:all .2s;
+}
+.btn-login:hover{background:var(--primary-dark);transform:translateY(-1px)}
+.btn-login:disabled{opacity:.6;cursor:not-allowed;transform:none}
+
+/* ── User badge & sidebar user ───────────────────── */
+.user-badge{font-size:.8rem;color:var(--text-light);background:var(--bg);padding:4px 12px;border-radius:20px;font-weight:500}
+.sidebar-user{font-size:.78rem;color:#94a3b8;padding:0 0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
 /* ── Loading Overlay ──────────────────────────────── */
 .loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:16px;transition:opacity .4s}
 .loading-overlay.hidden{opacity:0;pointer-events:none}
