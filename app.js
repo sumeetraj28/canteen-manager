@@ -87,18 +87,33 @@
   }
 
   // ── Items In ──────────────────────────────────────
+  // Auto-calculate total cost = qty × rate
+  function autoCalcCost() {
+    const qty = parseFloat($('#inQty').value) || 0;
+    const rate = parseFloat($('#inRate').value) || 0;
+    $('#inPrice').value = qty && rate ? (qty * rate).toFixed(2) : '';
+  }
+  $('#inQty').addEventListener('input', autoCalcCost);
+  $('#inRate').addEventListener('input', autoCalcCost);
+
   $('#formItemsIn').addEventListener('submit', (e) => {
     e.preventDefault();
+    const qty = parseFloat($('#inQty').value);
+    const rate = parseFloat($('#inRate').value);
     const record = {
       date: $('#inDate').value,
+      billNo: $('#inBillNo').value.trim(),
       item: $('#inItem').value.trim(),
-      qty: parseFloat($('#inQty').value),
+      brand: $('#inBrand').value.trim(),
+      qty: qty,
       unit: $('#inUnit').value,
-      cost: parseFloat($('#inPrice').value),
+      rate: rate,
+      cost: qty * rate,
       supplier: $('#inSupplier').value.trim(),
+      remark: $('#inRemark').value.trim(),
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     };
-    if (!record.item || !record.qty || !record.cost) return toast('Please fill all required fields', true);
+    if (!record.item || !record.qty || !record.rate) return toast('Please fill all required fields', true);
     colItemsIn.add(record).then(() => {
       e.target.reset();
       $$('input[type="date"]').forEach(inp => inp.value = today());
@@ -106,22 +121,50 @@
     }).catch(() => toast('Failed to save', true));
   });
 
-  function renderItemsIn(filter = '') {
+  function getItemsInFilters() {
+    return {
+      dateFrom: $('#filterInDateFrom').value,
+      dateTo: $('#filterInDateTo').value,
+      item: $('#filterInItem').value.trim().toLowerCase(),
+      brand: $('#filterInBrand').value.trim().toLowerCase(),
+      supplier: $('#filterInSupplier').value.trim().toLowerCase(),
+      billNo: $('#filterInBillNo').value.trim().toLowerCase()
+    };
+  }
+
+  function renderItemsIn() {
+    const f = getItemsInFilters();
     const tbody = $('#tableItemsIn tbody');
-    const filtered = itemsIn.filter(r =>
-      r.item.toLowerCase().includes(filter.toLowerCase()) ||
-      (r.supplier || '').toLowerCase().includes(filter.toLowerCase())
-    );
+    const filtered = itemsIn.filter(r => {
+      if (f.dateFrom && r.date < f.dateFrom) return false;
+      if (f.dateTo && r.date > f.dateTo) return false;
+      if (f.item && !r.item.toLowerCase().includes(f.item)) return false;
+      if (f.brand && !(r.brand || '').toLowerCase().includes(f.brand)) return false;
+      if (f.supplier && !(r.supplier || '').toLowerCase().includes(f.supplier)) return false;
+      if (f.billNo && !(r.billNo || '').toLowerCase().includes(f.billNo)) return false;
+      return true;
+    });
     tbody.innerHTML = filtered.length === 0
-      ? '<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:32px">No purchase records yet</td></tr>'
+      ? '<tr><td colspan="11" style="text-align:center;color:var(--text-light);padding:32px">No purchase records yet</td></tr>'
       : filtered.map(r => `<tr>
-          <td>${sanitize(r.date)}</td><td>${sanitize(r.item)}</td><td>${r.qty}</td><td>${sanitize(r.unit)}</td>
-          <td>${fmt(r.cost)}</td><td>${sanitize(r.supplier || '—')}</td>
+          <td>${sanitize(r.date)}</td><td>${sanitize(r.billNo || '—')}</td><td>${sanitize(r.item)}</td>
+          <td>${sanitize(r.brand || '—')}</td><td>${r.qty}</td><td>${sanitize(r.unit)}</td>
+          <td>${fmt(r.rate || 0)}</td><td>${fmt(r.cost)}</td><td>${sanitize(r.supplier || '—')}</td>
+          <td>${sanitize(r.remark || '—')}</td>
           <td><button class="btn-delete" data-id="${sanitize(r.id)}" data-type="in">Delete</button></td>
         </tr>`).join('');
   }
 
-  $('#searchItemsIn').addEventListener('input', (e) => renderItemsIn(e.target.value));
+  // Filter listeners for Items In
+  ['filterInDateFrom','filterInDateTo','filterInItem','filterInBrand','filterInSupplier','filterInBillNo'].forEach(id => {
+    $('#' + id).addEventListener('input', () => renderItemsIn());
+  });
+  $('#clearFiltersIn').addEventListener('click', () => {
+    ['filterInDateFrom','filterInDateTo','filterInItem','filterInBrand','filterInSupplier','filterInBillNo'].forEach(id => {
+      $('#' + id).value = '';
+    });
+    renderItemsIn();
+  });
 
   // ── Items Out ─────────────────────────────────────
   $('#formItemsOut').addEventListener('submit', (e) => {

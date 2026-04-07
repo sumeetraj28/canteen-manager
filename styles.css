@@ -102,7 +102,14 @@ input[type="text"],input[type="number"],input[type="date"],select{
   background:var(--bg);color:var(--text);font-size:.9rem;transition:border-color .2s;
 }
 input:focus,select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,.12)}
+input[readonly]{background:#e9ecef;cursor:default}
 .search-input{padding:8px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);min-width:220px}
+
+/* ── Filter Row ──────────────────────────────────── */
+.filter-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;align-items:center}
+.filter-input{padding:7px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);font-size:.82rem;min-width:0;width:140px}
+.filter-input:focus{border-color:var(--primary);outline:none}
+.btn-sm{padding:6px 14px;font-size:.78rem}
 
 /* ── Buttons ─────────────────────────────────────── */
 .btn-primary{

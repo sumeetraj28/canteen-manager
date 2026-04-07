@@ -152,8 +152,16 @@
                 <input type="date" id="inDate" required />
               </div>
               <div class="form-group">
+                <label for="inBillNo">Bill No</label>
+                <input type="text" id="inBillNo" placeholder="Invoice / Bill number" />
+              </div>
+              <div class="form-group">
                 <label for="inItem">Item Name</label>
                 <input type="text" id="inItem" placeholder="e.g. Rice, Oil, Vegetables" required />
+              </div>
+              <div class="form-group">
+                <label for="inBrand">Brand</label>
+                <input type="text" id="inBrand" placeholder="e.g. Fortune, Tata" />
               </div>
               <div class="form-group">
                 <label for="inQty">Quantity</label>
@@ -170,12 +178,20 @@
                 </select>
               </div>
               <div class="form-group">
+                <label for="inRate">Rate / Unit (₹)</label>
+                <input type="number" id="inRate" min="0" step="0.01" placeholder="Price per unit" required />
+              </div>
+              <div class="form-group">
                 <label for="inPrice">Total Cost (₹)</label>
-                <input type="number" id="inPrice" min="0" step="0.01" placeholder="Total cost" required />
+                <input type="number" id="inPrice" min="0" step="0.01" placeholder="Auto-calculated" readonly />
               </div>
               <div class="form-group">
                 <label for="inSupplier">Supplier</label>
                 <input type="text" id="inSupplier" placeholder="Supplier name" />
+              </div>
+              <div class="form-group">
+                <label for="inRemark">Remark</label>
+                <input type="text" id="inRemark" placeholder="Any notes" />
               </div>
             </div>
             <button type="submit" class="btn-primary">+ Add Item In</button>
@@ -184,11 +200,19 @@
         <div class="table-card">
           <div class="table-header">
             <h3>Purchase History</h3>
-            <input type="text" id="searchItemsIn" class="search-input" placeholder="Search items..." />
+          </div>
+          <div class="filter-row" id="filtersItemsIn">
+            <input type="date" id="filterInDateFrom" class="filter-input" title="From date" />
+            <input type="date" id="filterInDateTo" class="filter-input" title="To date" />
+            <input type="text" id="filterInItem" class="filter-input" placeholder="Item" />
+            <input type="text" id="filterInBrand" class="filter-input" placeholder="Brand" />
+            <input type="text" id="filterInSupplier" class="filter-input" placeholder="Supplier" />
+            <input type="text" id="filterInBillNo" class="filter-input" placeholder="Bill No" />
+            <button class="btn-secondary btn-sm" id="clearFiltersIn">Clear</button>
           </div>
           <div class="table-wrapper">
             <table id="tableItemsIn">
-              <thead><tr><th>Date</th><th>Item</th><th>Qty</th><th>Unit</th><th>Cost (₹)</th><th>Supplier</th><th>Action</th></tr></thead>
+              <thead><tr><th>Date</th><th>Bill No</th><th>Item</th><th>Brand</th><th>Qty</th><th>Unit</th><th>Rate (₹)</th><th>Cost (₹)</th><th>Supplier</th><th>Remark</th><th>Action</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
