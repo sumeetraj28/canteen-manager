@@ -447,6 +447,7 @@
           <td>${sanitize(r.customer || '—')}</td>
           <td><button class="btn-delete" data-id="${sanitize(r.id)}" data-type="out">Delete</button></td>
         </tr>`).join('');
+    renderItemsOutSummary();
   }
   let lastFilteredItemsOut = [];
 
@@ -459,6 +460,185 @@
     $('#filterOutCategory').value = '';
     $('#filterOutPerson').value = '';
     renderItemsOut();
+  });
+
+  // ── Items Out: Month-wise Summary Tables ──────────
+  function renderItemsOutSummary() {
+    const yearSel = $('#itemsOutFY');
+    const years = getFYears();
+    const prev = yearSel.value;
+    yearSel.innerHTML = years.map(y => `<option value="${y}">FY ${fyLabel(y)}</option>`).join('');
+    if (prev && years.includes(parseInt(prev))) yearSel.value = prev;
+    drawItemsOutSummary();
+  }
+
+  function drawItemsOutSummary() {
+    const fyStart = parseInt($('#itemsOutFY').value);
+
+    function fyIdx(dateStr) {
+      const d = new Date(dateStr);
+      const m = d.getMonth(), y = d.getFullYear();
+      if (m >= 3) return y === fyStart ? m - 3 : -1;
+      return y === fyStart + 1 ? m + 9 : -1;
+    }
+
+    const itemQtyMap = {}, itemAmtMap = {}, brandMap = {}, supplierMap = {};
+    const categoryMap = {}, personCountMap = {}, personAmtMap = {};
+
+    itemsOut.forEach(r => {
+      const idx = fyIdx(r.date);
+      if (idx < 0) return;
+      const key = r.item.toLowerCase();
+      const brandKey = (r.brand || 'Unbranded').trim();
+      const suppKey = (r.supplier || 'Unknown').trim();
+      const catKey = (r.category || 'Uncategorized').trim();
+      const persKey = (r.person || 'Unknown').trim();
+
+      // 1. Item Qty
+      if (!itemQtyMap[key]) itemQtyMap[key] = { name: r.item, unit: r.unit, months: MONTHS.map(() => 0) };
+      itemQtyMap[key].months[idx] += r.qty;
+
+      // 2. Item Amt
+      if (!itemAmtMap[key]) itemAmtMap[key] = { name: r.item, months: MONTHS.map(() => 0) };
+      itemAmtMap[key].months[idx] += r.amount;
+
+      // 3. Brand Amt
+      const bk = brandKey.toLowerCase();
+      if (!brandMap[bk]) brandMap[bk] = { name: brandKey, months: MONTHS.map(() => 0) };
+      brandMap[bk].months[idx] += r.amount;
+
+      // 4. Supplier Amt
+      const sk = suppKey.toLowerCase();
+      if (!supplierMap[sk]) supplierMap[sk] = { name: suppKey, months: MONTHS.map(() => 0) };
+      supplierMap[sk].months[idx] += r.amount;
+
+      // 5. Category Amt
+      const ck = catKey.toLowerCase();
+      if (!categoryMap[ck]) categoryMap[ck] = { name: catKey, months: MONTHS.map(() => 0) };
+      categoryMap[ck].months[idx] += r.amount;
+
+      // 6. Person Count
+      const pk = persKey.toLowerCase();
+      if (!personCountMap[pk]) personCountMap[pk] = { name: persKey, months: MONTHS.map(() => 0) };
+      personCountMap[pk].months[idx] += 1;
+
+      // 7. Person Amt
+      if (!personAmtMap[pk]) personAmtMap[pk] = { name: persKey, months: MONTHS.map(() => 0) };
+      personAmtMap[pk].months[idx] += r.amount;
+    });
+
+    lastOutSummary = {
+      itemQty: Object.values(itemQtyMap), itemAmt: Object.values(itemAmtMap),
+      brand: Object.values(brandMap), supplier: Object.values(supplierMap),
+      category: Object.values(categoryMap),
+      personCount: Object.values(personCountMap), personAmt: Object.values(personAmtMap)
+    };
+
+    function renderOutGroupTable(tbodyId, rows, valFmt, totalRowId) {
+      const tbody = $('#' + tbodyId + ' tbody');
+      const monthTotals = MONTHS.map(() => 0);
+      let grandTotal = 0;
+      const hasUnit = rows.length > 0 && rows[0].unit !== undefined;
+
+      tbody.innerHTML = rows.length === 0
+        ? `<tr><td colspan="${hasUnit ? 15 : 14}" style="text-align:center;color:var(--text-light);padding:32px">No data for this FY</td></tr>`
+        : rows.filter(r => r.months.some(v => v)).map(r => {
+            const rowTotal = r.months.reduce((s, v) => s + v, 0);
+            r.months.forEach((v, i) => { monthTotals[i] += v; });
+            grandTotal += rowTotal;
+            return `<tr>
+              <td><strong>${sanitize(r.name)}</strong></td>
+              ${hasUnit ? `<td>${sanitize(r.unit)}</td>` : ''}
+              ${r.months.map(v => `<td>${v ? valFmt(v) : '—'}</td>`).join('')}
+              <td><strong>${valFmt(rowTotal)}</strong></td>
+            </tr>`;
+          }).join('');
+
+      if (totalRowId && grandTotal > 0) {
+        $(totalRowId).innerHTML = `
+          <td><strong>TOTAL</strong></td>
+          ${hasUnit ? '<td></td>' : ''}
+          ${monthTotals.map(v => `<td><strong>${v ? valFmt(v) : '—'}</strong></td>`).join('')}
+          <td><strong>${valFmt(grandTotal)}</strong></td>`;
+      } else if (totalRowId) {
+        $(totalRowId).innerHTML = '';
+      }
+    }
+
+    const fmtQ = v => v % 1 === 0 ? String(v) : v.toFixed(2);
+    const fmtC = v => String(v);
+
+    renderOutGroupTable('tableOutQtyMonthly', Object.values(itemQtyMap), fmtQ, null);
+    renderOutGroupTable('tableOutAmtMonthly', Object.values(itemAmtMap), fmt, '#outAmtTotalRow');
+    renderOutGroupTable('tableOutBrandMonthly', Object.values(brandMap), fmt, '#outBrandTotalRow');
+    renderOutGroupTable('tableOutSupplierMonthly', Object.values(supplierMap), fmt, '#outSupplierTotalRow');
+    renderOutGroupTable('tableOutCategoryMonthly', Object.values(categoryMap), fmt, '#outCategoryTotalRow');
+    renderOutGroupTable('tableOutPersonCountMonthly', Object.values(personCountMap), fmtC, '#outPersonCountTotalRow');
+    renderOutGroupTable('tableOutPersonAmtMonthly', Object.values(personAmtMap), fmt, '#outPersonAmtTotalRow');
+  }
+
+  let lastOutSummary = { itemQty: [], itemAmt: [], brand: [], supplier: [], category: [], personCount: [], personAmt: [] };
+
+  $('#itemsOutFY').addEventListener('change', drawItemsOutSummary);
+
+  $('#btnExportItemsOutSummary').addEventListener('click', () => {
+    const s = lastOutSummary;
+    const fy = $('#itemsOutFY').value;
+    const rows = [];
+
+    rows.push(['Quantity of Items Sold — Month-wise']);
+    rows.push(['Item', 'Unit', ...MONTHS, 'Total']);
+    s.itemQty.filter(r => r.months.some(v => v)).forEach(r => {
+      rows.push([r.name, r.unit, ...r.months, r.months.reduce((a, b) => a + b, 0)]);
+    });
+    rows.push([]);
+
+    rows.push(['Amount of Items Sold — Month-wise']);
+    rows.push(['Item', ...MONTHS, 'Total']);
+    s.itemAmt.filter(r => r.months.some(v => v)).forEach(r => {
+      rows.push([r.name, ...r.months, r.months.reduce((a, b) => a + b, 0)]);
+    });
+    rows.push([]);
+
+    rows.push(['Amount of Items Sold from Brands — Month-wise']);
+    rows.push(['Brand', ...MONTHS, 'Total']);
+    s.brand.filter(r => r.months.some(v => v)).forEach(r => {
+      rows.push([r.name, ...r.months, r.months.reduce((a, b) => a + b, 0)]);
+    });
+    rows.push([]);
+
+    rows.push(['Amount of Items Sold from Suppliers — Month-wise']);
+    rows.push(['Supplier', ...MONTHS, 'Total']);
+    s.supplier.filter(r => r.months.some(v => v)).forEach(r => {
+      rows.push([r.name, ...r.months, r.months.reduce((a, b) => a + b, 0)]);
+    });
+    rows.push([]);
+
+    rows.push(['Amount of Items Sold per Category — Month-wise']);
+    rows.push(['Category', ...MONTHS, 'Total']);
+    s.category.filter(r => r.months.some(v => v)).forEach(r => {
+      rows.push([r.name, ...r.months, r.months.reduce((a, b) => a + b, 0)]);
+    });
+    rows.push([]);
+
+    rows.push(['Number of Times Each Person Takes Out Items — Month-wise']);
+    rows.push(['Person', ...MONTHS, 'Total']);
+    s.personCount.filter(r => r.months.some(v => v)).forEach(r => {
+      rows.push([r.name, ...r.months, r.months.reduce((a, b) => a + b, 0)]);
+    });
+    rows.push([]);
+
+    rows.push(['Amount of Items Each Person Takes — Month-wise']);
+    rows.push(['Person', ...MONTHS, 'Total']);
+    s.personAmt.filter(r => r.months.some(v => v)).forEach(r => {
+      rows.push([r.name, ...r.months, r.months.reduce((a, b) => a + b, 0)]);
+    });
+
+    if (rows.length <= 14) return toast('No data to export', true);
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Sales Summaries');
+    XLSX.writeFile(wb, 'canteen_sales_summaries_FY' + fyLabel(fy) + '_' + today() + '.xlsx');
   });
 
   // ── Expenses ──────────────────────────────────────

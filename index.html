@@ -374,6 +374,99 @@
             </table>
           </div>
         </div>
+
+        <div class="table-card">
+          <div class="table-header">
+            <h3>Month-wise Sales Summaries</h3>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn-secondary btn-sm" id="btnExportItemsOutSummary">Export .xlsx</button>
+              <select id="itemsOutFY" class="filter-input" style="width:auto"></select>
+            </div>
+          </div>
+
+          <!-- 1. Qty of Items sold month wise -->
+          <h4 style="margin:20px 0 10px;font-size:.9rem;color:var(--text)">1. Quantity of Items Sold &mdash; Month-wise</h4>
+          <div class="table-wrapper">
+            <table id="tableOutQtyMonthly">
+              <thead>
+                <tr><th>Item</th><th>Unit</th><th>Apr</th><th>May</th><th>Jun</th><th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Total</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <!-- 2. Amount of Items sold month wise -->
+          <h4 style="margin:24px 0 10px;font-size:.9rem;color:var(--text)">2. Amount of Items Sold &mdash; Month-wise</h4>
+          <div class="table-wrapper">
+            <table id="tableOutAmtMonthly">
+              <thead>
+                <tr><th>Item</th><th>Apr</th><th>May</th><th>Jun</th><th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Total</th></tr>
+              </thead>
+              <tbody></tbody>
+              <tfoot><tr id="outAmtTotalRow"></tr></tfoot>
+            </table>
+          </div>
+
+          <!-- 3. Amount from Brands month wise -->
+          <h4 style="margin:24px 0 10px;font-size:.9rem;color:var(--text)">3. Amount of Items Sold from Brands &mdash; Month-wise</h4>
+          <div class="table-wrapper">
+            <table id="tableOutBrandMonthly">
+              <thead>
+                <tr><th>Brand</th><th>Apr</th><th>May</th><th>Jun</th><th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Total</th></tr>
+              </thead>
+              <tbody></tbody>
+              <tfoot><tr id="outBrandTotalRow"></tr></tfoot>
+            </table>
+          </div>
+
+          <!-- 4. Amount from Suppliers month wise -->
+          <h4 style="margin:24px 0 10px;font-size:.9rem;color:var(--text)">4. Amount of Items Sold from Suppliers &mdash; Month-wise</h4>
+          <div class="table-wrapper">
+            <table id="tableOutSupplierMonthly">
+              <thead>
+                <tr><th>Supplier</th><th>Apr</th><th>May</th><th>Jun</th><th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Total</th></tr>
+              </thead>
+              <tbody></tbody>
+              <tfoot><tr id="outSupplierTotalRow"></tr></tfoot>
+            </table>
+          </div>
+
+          <!-- 5. Amount per Category month wise -->
+          <h4 style="margin:24px 0 10px;font-size:.9rem;color:var(--text)">5. Amount of Items Sold per Category &mdash; Month-wise</h4>
+          <div class="table-wrapper">
+            <table id="tableOutCategoryMonthly">
+              <thead>
+                <tr><th>Category</th><th>Apr</th><th>May</th><th>Jun</th><th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Total</th></tr>
+              </thead>
+              <tbody></tbody>
+              <tfoot><tr id="outCategoryTotalRow"></tr></tfoot>
+            </table>
+          </div>
+
+          <!-- 6. Count per Person month wise -->
+          <h4 style="margin:24px 0 10px;font-size:.9rem;color:var(--text)">6. Number of Times Each Person Takes Out Items &mdash; Month-wise</h4>
+          <div class="table-wrapper">
+            <table id="tableOutPersonCountMonthly">
+              <thead>
+                <tr><th>Person</th><th>Apr</th><th>May</th><th>Jun</th><th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Total</th></tr>
+              </thead>
+              <tbody></tbody>
+              <tfoot><tr id="outPersonCountTotalRow"></tr></tfoot>
+            </table>
+          </div>
+
+          <!-- 7. Amount per Person month wise -->
+          <h4 style="margin:24px 0 10px;font-size:.9rem;color:var(--text)">7. Amount of Items Each Person Takes &mdash; Month-wise</h4>
+          <div class="table-wrapper">
+            <table id="tableOutPersonAmtMonthly">
+              <thead>
+                <tr><th>Person</th><th>Apr</th><th>May</th><th>Jun</th><th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Total</th></tr>
+              </thead>
+              <tbody></tbody>
+              <tfoot><tr id="outPersonAmtTotalRow"></tr></tfoot>
+            </table>
+          </div>
+        </div>
       </section>
 
       <!-- ==================== INVENTORY ==================== -->
