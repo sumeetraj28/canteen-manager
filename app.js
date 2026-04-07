@@ -37,7 +37,7 @@
   // ── Navigation ────────────────────────────────────
   const navItems = $$('.nav-item');
   const pages = $$('.page');
-  const titles = { dashboard:'Dashboard', 'items-in':'Items In', 'items-out':'Items Out', inventory:'Inventory', expenses:'Other Expenses', pnl:'P&L Statement' };
+  const titles = { dashboard:'Dashboard', 'items-in':'Items In', 'items-out':'Items Out', inventory:'Inventory', expenses:'Other Expenses', pnl:'P&L Statement', changelog:'Changelog' };
 
   function navigate(page) {
     navItems.forEach(n => n.classList.toggle('active', n.dataset.page === page));

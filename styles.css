@@ -154,6 +154,17 @@ input[readonly]{background:#e9ecef;cursor:default}
 .toast.show{transform:translateY(0);opacity:1}
 .toast.error{background:var(--red)}
 
+/* ── Changelog ────────────────────────────────────── */
+.changelog-list{display:flex;flex-direction:column;gap:20px}
+.changelog-entry{display:grid;grid-template-columns:80px 110px 1fr;gap:12px;padding:16px 0;border-bottom:1px solid var(--border)}
+.changelog-entry:last-child{border-bottom:none}
+.changelog-version{font-weight:700;color:var(--primary);font-size:.9rem}
+.changelog-date{font-size:.82rem;color:var(--text-light);padding-top:2px}
+.changelog-body{font-size:.88rem;line-height:1.6}
+.changelog-body ul{margin:6px 0 0 18px}
+.changelog-body li{margin-bottom:3px}
+@media(max-width:600px){.changelog-entry{grid-template-columns:1fr;gap:4px}}
+
 /* ── Login Screen ─────────────────────────────────── */
 .login-screen{
   position:fixed;inset:0;background:linear-gradient(135deg,#1a1d23 0%,#282c34 50%,#1a1d23 100%);
