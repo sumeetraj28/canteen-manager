@@ -15,6 +15,62 @@
     return div.innerHTML;
   }
 
+  // ── Generic table sorting ─────────────────────────
+  const sortState = {};  // tableId → { col, dir }
+
+  function applySort(arr, tableId, colAccessor) {
+    const s = sortState[tableId];
+    if (!s) return arr;
+    const sorted = [...arr];
+    sorted.sort((a, b) => {
+      let va = colAccessor(a, s.col);
+      let vb = colAccessor(b, s.col);
+      if (va == null) va = '';
+      if (vb == null) vb = '';
+      if (typeof va === 'number' && typeof vb === 'number') return s.dir === 'asc' ? va - vb : vb - va;
+      va = String(va).toLowerCase();
+      vb = String(vb).toLowerCase();
+      return s.dir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+    });
+    return sorted;
+  }
+
+  function bindSortHeaders(tableId, renderFn) {
+    const table = document.getElementById(tableId);
+    if (!table) return;
+    table.querySelectorAll('th.sortable').forEach(th => {
+      th.addEventListener('click', () => {
+        const col = th.dataset.col;
+        const prev = sortState[tableId];
+        if (prev && prev.col === col) {
+          prev.dir = prev.dir === 'asc' ? 'desc' : 'asc';
+        } else {
+          sortState[tableId] = { col, dir: 'asc' };
+        }
+        // Update header classes
+        table.querySelectorAll('th.sortable').forEach(h => h.classList.remove('sort-asc', 'sort-desc'));
+        th.classList.add('sort-' + sortState[tableId].dir);
+        renderFn();
+      });
+    });
+  }
+
+  // ── XLSX export helper ────────────────────────────
+  function exportXlsx(data, headers, fileName) {
+    if (!data.length) return toast('No data to export', true);
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
+    // Auto-width columns
+    ws['!cols'] = headers.map((h, i) => {
+      let maxW = h.length;
+      data.forEach(row => { const len = String(row[i] ?? '').length; if (len > maxW) maxW = len; });
+      return { wch: Math.min(maxW + 2, 40) };
+    });
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+    XLSX.writeFile(wb, fileName + '_' + today() + '.xlsx');
+    toast('Exported to .xlsx');
+  }
+
   // ── In-memory data (synced from Firestore) ────────
   let itemsIn = [];
   let itemsOut = [];
@@ -135,7 +191,7 @@
   function renderItemsIn() {
     const f = getItemsInFilters();
     const tbody = $('#tableItemsIn tbody');
-    const filtered = itemsIn.filter(r => {
+    let filtered = itemsIn.filter(r => {
       if (f.dateFrom && r.date < f.dateFrom) return false;
       if (f.dateTo && r.date > f.dateTo) return false;
       if (f.item && !r.item.toLowerCase().includes(f.item)) return false;
@@ -144,6 +200,11 @@
       if (f.billNo && !(r.billNo || '').toLowerCase().includes(f.billNo)) return false;
       return true;
     });
+    filtered = applySort(filtered, 'tableItemsIn', (r, col) => {
+      if (col === 'qty' || col === 'rate' || col === 'cost') return r[col] || 0;
+      return r[col] || '';
+    });
+    lastFilteredItemsIn = filtered;
     tbody.innerHTML = filtered.length === 0
       ? '<tr><td colspan="11" style="text-align:center;color:var(--text-light);padding:32px">No purchase records yet</td></tr>'
       : filtered.map(r => `<tr>
@@ -154,6 +215,7 @@
           <td><button class="btn-delete" data-id="${sanitize(r.id)}" data-type="in">Delete</button></td>
         </tr>`).join('');
   }
+  let lastFilteredItemsIn = [];
 
   // Filter listeners for Items In
   ['filterInDateFrom','filterInDateTo','filterInItem','filterInBrand','filterInSupplier','filterInBillNo'].forEach(id => {
@@ -201,7 +263,7 @@
   function renderItemsOut() {
     const f = getItemsOutFilters();
     const tbody = $('#tableItemsOut tbody');
-    const filtered = itemsOut.filter(r => {
+    let filtered = itemsOut.filter(r => {
       if (f.dateFrom && r.date < f.dateFrom) return false;
       if (f.dateTo && r.date > f.dateTo) return false;
       if (f.item && !r.item.toLowerCase().includes(f.item)) return false;
@@ -209,6 +271,11 @@
       if (f.person && (r.person || '') !== f.person) return false;
       return true;
     });
+    filtered = applySort(filtered, 'tableItemsOut', (r, col) => {
+      if (col === 'qty' || col === 'amount') return r[col] || 0;
+      return r[col] || '';
+    });
+    lastFilteredItemsOut = filtered;
     tbody.innerHTML = filtered.length === 0
       ? '<tr><td colspan="9" style="text-align:center;color:var(--text-light);padding:32px">No sales records yet</td></tr>'
       : filtered.map(r => `<tr>
@@ -219,6 +286,7 @@
           <td><button class="btn-delete" data-id="${sanitize(r.id)}" data-type="out">Delete</button></td>
         </tr>`).join('');
   }
+  let lastFilteredItemsOut = [];
 
   ['filterOutDateFrom','filterOutDateTo','filterOutItem','filterOutCategory','filterOutPerson'].forEach(id => {
     $('#' + id).addEventListener('input', () => renderItemsOut());
@@ -263,13 +331,18 @@
   function renderExpenses() {
     const f = getExpFilters();
     const tbody = $('#tableExpenses tbody');
-    const filtered = expenses.filter(r => {
+    let filtered = expenses.filter(r => {
       if (f.dateFrom && r.date < f.dateFrom) return false;
       if (f.dateTo && r.date > f.dateTo) return false;
       if (f.category && r.category !== f.category) return false;
       if (f.desc && !(r.note || '').toLowerCase().includes(f.desc)) return false;
       return true;
     });
+    filtered = applySort(filtered, 'tableExpenses', (r, col) => {
+      if (col === 'amount') return r[col] || 0;
+      return r[col] || '';
+    });
+    lastFilteredExpenses = filtered;
     tbody.innerHTML = filtered.length === 0
       ? '<tr><td colspan="5" style="text-align:center;color:var(--text-light);padding:32px">No expenses recorded yet</td></tr>'
       : filtered.map(r => `<tr>
@@ -280,6 +353,7 @@
 
     renderExpMonthly();
   }
+  let lastFilteredExpenses = [];
 
   ['filterExpDateFrom','filterExpDateTo','filterExpDesc'].forEach(id => {
     $('#' + id).addEventListener('input', () => renderExpenses());
@@ -301,6 +375,8 @@
 
     drawExpMonthly();
   }
+
+  let lastExpMonthlyData = [];
 
   function drawExpMonthly() {
     const fyStart = parseInt($('#expMonthFY').value);
@@ -325,6 +401,7 @@
     const tbody = $('#tableExpMonthly tbody');
     const monthTotals = MONTHS.map(() => 0);
     let grandTotal = 0;
+    lastExpMonthlyData = [];
 
     tbody.innerHTML = EXP_CATEGORIES.map(cat => {
       const row = catMap[cat];
@@ -332,6 +409,7 @@
       if (rowTotal === 0) return ''; // skip categories with no data
       row.forEach((v, i) => { monthTotals[i] += v; });
       grandTotal += rowTotal;
+      lastExpMonthlyData.push({ category: cat, months: [...row], total: rowTotal });
       return `<tr>
         <td><strong>${sanitize(cat)}</strong></td>
         ${row.map(v => `<td>${v ? fmt(v) : '—'}</td>`).join('')}
@@ -343,6 +421,8 @@
       tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;color:var(--text-light);padding:32px">No expenses for this financial year</td></tr>';
       $('#expMonthlyTotalRow').innerHTML = '';
     } else {
+      // Add totals row to export data
+      lastExpMonthlyData.push({ category: 'TOTAL', months: [...monthTotals], total: grandTotal });
       $('#expMonthlyTotalRow').innerHTML = `
         <td><strong>TOTAL</strong></td>
         ${monthTotals.map(v => `<td><strong>${v ? fmt(v) : '—'}</strong></td>`).join('')}
@@ -403,13 +483,18 @@
 
   function renderInventory() {
     const f = getInvFilters();
-    const data = buildInventory().filter(i => {
+    let data = buildInventory().filter(i => {
       if (f.item && !i.name.toLowerCase().includes(f.item)) return false;
       if (f.brand && !i.brand.toLowerCase().includes(f.brand)) return false;
       if (f.supplier && !i.supplier.toLowerCase().includes(f.supplier)) return false;
       if (f.status && i.status !== f.status) return false;
       return true;
     });
+    data = applySort(data, 'tableInventory', (r, col) => {
+      if (['qtyIn','qtyOut','balance','avgCost','value'].includes(col)) return r[col] || 0;
+      return r[col] || '';
+    });
+    lastFilteredInventory = data;
     const tbody = $('#tableInventory tbody');
     let lowCount = 0;
 
@@ -437,6 +522,7 @@
     const totalVal = allData.reduce((s, i) => s + i.value, 0);
     $('#invTotalValue').textContent = fmt(totalVal);
   }
+  let lastFilteredInventory = [];
 
   ['filterInvItem','filterInvBrand','filterInvSupplier'].forEach(id => {
     $('#' + id).addEventListener('input', () => renderInventory());
@@ -448,20 +534,38 @@
     renderInventory();
   });
 
-  // ── Export Inventory CSV ──────────────────────────
+  // ── Export handlers ────────────────────────────────
   $('#btnExportInventory').addEventListener('click', () => {
-    const data = buildInventory();
-    if (data.length === 0) return toast('No data to export', true);
-    let csv = 'Item,Brand,Supplier,Qty In,Qty Out,Balance,Unit,Rate/Unit,Stock Value,Status\n';
-    data.forEach(i => {
-      csv += `"${i.name}","${i.brand}","${i.supplier}",${i.qtyIn},${i.qtyOut},${i.balance},"${i.unit}",${i.avgCost.toFixed(2)},${i.value.toFixed(2)},"${i.status}"\n`;
-    });
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'canteen_inventory_' + today() + '.csv'; a.click();
-    URL.revokeObjectURL(url);
-    toast('Inventory exported');
+    const data = lastFilteredInventory;
+    exportXlsx(
+      data.map(i => [i.name, i.brand, i.supplier, i.qtyIn, i.qtyOut, i.balance, i.unit, +i.avgCost.toFixed(2), +i.value.toFixed(2), i.status]),
+      ['Item','Brand','Supplier','Qty In','Qty Out','Balance','Unit','Rate/Unit','Stock Value','Status'],
+      'canteen_inventory'
+    );
+  });
+
+  $('#btnExportItemsIn').addEventListener('click', () => {
+    exportXlsx(
+      lastFilteredItemsIn.map(r => [r.date, r.billNo || '', r.item, r.brand || '', r.qty, r.unit, r.rate || 0, r.cost, r.supplier || '', r.remark || '']),
+      ['Date','Bill No','Item','Brand','Qty','Unit','Rate','Cost','Supplier','Remark'],
+      'canteen_items_in'
+    );
+  });
+
+  $('#btnExportItemsOut').addEventListener('click', () => {
+    exportXlsx(
+      lastFilteredItemsOut.map(r => [r.date, r.item, r.category || '', r.person || '', r.qty, r.unit, r.amount, r.customer || '']),
+      ['Date','Item','Category','Person','Qty','Unit','Amount','Remark'],
+      'canteen_items_out'
+    );
+  });
+
+  $('#btnExportExpenses').addEventListener('click', () => {
+    exportXlsx(
+      lastFilteredExpenses.map(r => [r.date, r.category, r.amount, r.note || '']),
+      ['Date','Category','Amount','Description'],
+      'canteen_expenses'
+    );
   });
 
   // ── P&L Computation (Financial Year: Apr–Mar) ────
@@ -516,6 +620,7 @@
 
   // ── P&L Rendering ────────────────────────────────
   let pnlChart = null;
+  let lastPnlData = [];
 
   function renderPnl() {
     const yearSel = $('#pnlYear');
@@ -525,6 +630,22 @@
     function draw() {
       const year = parseInt(yearSel.value);
       const data = computeMonthlyPnl(year);
+      lastPnlData = data.map((m, i) => ({
+        month: MONTHS[i], revenue: m.revenue, itemCost: m.itemCost, otherExp: m.otherExp,
+        totalCost: m.totalCost, net: m.net,
+        margin: m.revenue > 0 ? +((m.net / m.revenue) * 100).toFixed(1) : 0
+      }));
+      const pnlCols = ['month','revenue','itemCost','otherExp','totalCost','net','margin'];
+      let pnlRows = lastPnlData;
+      const ps = sortState['tablePnl'];
+      if (ps) {
+        pnlRows = [...pnlRows].sort((a, b) => {
+          const key = pnlCols[parseInt(ps.col)] || 'month';
+          const va = a[key], vb = b[key];
+          if (typeof va === 'number' && typeof vb === 'number') return ps.dir === 'asc' ? va - vb : vb - va;
+          return ps.dir === 'asc' ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+        });
+      }
       const totRev = data.reduce((s, m) => s + m.revenue, 0);
       const totCost = data.reduce((s, m) => s + m.totalCost, 0);
       const totNet = totRev - totCost;
@@ -536,14 +657,14 @@
       netEl.className = 'stat-value ' + (totNet >= 0 ? 'profit' : 'loss');
 
       const tbody = $('#tablePnl tbody');
-      tbody.innerHTML = data.map((m, i) => {
-        const margin = m.revenue > 0 ? ((m.net / m.revenue) * 100).toFixed(1) : '—';
+      tbody.innerHTML = pnlRows.map(r => {
+        const marginStr = r.margin ? r.margin + '%' : '—';
         return `<tr>
-          <td>${MONTHS[i]}</td>
-          <td>${fmt(m.revenue)}</td><td>${fmt(m.itemCost)}</td>
-          <td>${fmt(m.otherExp)}</td><td>${fmt(m.totalCost)}</td>
-          <td class="${m.net >= 0 ? 'profit' : 'loss'}">${fmt(m.net)}</td>
-          <td>${margin}${margin !== '—' ? '%' : ''}</td>
+          <td>${r.month}</td>
+          <td>${fmt(r.revenue)}</td><td>${fmt(r.itemCost)}</td>
+          <td>${fmt(r.otherExp)}</td><td>${fmt(r.totalCost)}</td>
+          <td class="${r.net >= 0 ? 'profit' : 'loss'}">${fmt(r.net)}</td>
+          <td>${marginStr}</td>
         </tr>`;
       }).join('');
 
@@ -738,5 +859,33 @@
       toast('Logged out');
     });
   });
+
+  // ── P&L Export ────────────────────────────────────
+  $('#btnExportPnl').addEventListener('click', () => {
+    const fy = $('#pnlYear').value;
+    exportXlsx(
+      lastPnlData.map(r => [r.month, r.revenue, r.itemCost, r.otherExp, r.totalCost, r.net, r.margin ? r.margin + '%' : '—']),
+      ['Month','Revenue','Item Costs','Other Expenses','Total Costs','Net P&L','Margin %'],
+      'canteen_pnl_FY' + fyLabel(fy)
+    );
+  });
+
+  // ── Month-wise Expense Export ─────────────────────
+  $('#btnExportExpMonthly').addEventListener('click', () => {
+    const fy = $('#expMonthFY').value;
+    if (!lastExpMonthlyData.length) return toast('No data to export', true);
+    exportXlsx(
+      lastExpMonthlyData.map(r => [r.category, ...r.months, r.total]),
+      ['Category', ...MONTHS, 'Total'],
+      'canteen_monthly_expenses_FY' + fyLabel(fy)
+    );
+  });
+
+  // ── Bind sort headers ─────────────────────────────
+  bindSortHeaders('tableItemsIn', renderItemsIn);
+  bindSortHeaders('tableItemsOut', renderItemsOut);
+  bindSortHeaders('tableInventory', renderInventory);
+  bindSortHeaders('tableExpenses', renderExpenses);
+  bindSortHeaders('tablePnl', renderPnl);
 
 })();

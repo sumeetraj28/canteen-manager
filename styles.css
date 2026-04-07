@@ -86,6 +86,11 @@ input,select,textarea{font-family:inherit;font-size:.93rem}
 table{width:100%;border-collapse:collapse;font-size:.87rem}
 thead{background:#f8fafc}
 th{text-align:left;padding:12px 14px;font-weight:600;color:var(--text-light);font-size:.78rem;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid var(--border)}
+th.sortable{cursor:pointer;user-select:none;white-space:nowrap;transition:color .2s}
+th.sortable:hover{color:var(--primary)}
+th.sortable .sort-icon{display:inline-block;width:12px;text-align:center;font-size:.7rem;opacity:.4;margin-left:2px}
+th.sortable.sort-asc .sort-icon::after{content:'\25B2';opacity:1}
+th.sortable.sort-desc .sort-icon::after{content:'\25BC';opacity:1}
 td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
 tbody tr:hover{background:#f8fafc}
 tfoot td{font-weight:700;border-top:2px solid var(--text);padding:14px}

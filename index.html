@@ -6,6 +6,7 @@
   <title>RTCIT Food Court</title>
   <link rel="stylesheet" href="styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 </head>
@@ -204,6 +205,7 @@
         <div class="table-card">
           <div class="table-header">
             <h3>Purchase History</h3>
+            <button class="btn-secondary btn-sm" id="btnExportItemsIn">Export .xlsx</button>
           </div>
           <div class="filter-row" id="filtersItemsIn">
             <input type="date" id="filterInDateFrom" class="filter-input" title="From date" />
@@ -216,7 +218,7 @@
           </div>
           <div class="table-wrapper">
             <table id="tableItemsIn">
-              <thead><tr><th>Date</th><th>Bill No</th><th>Item</th><th>Brand</th><th>Qty</th><th>Unit</th><th>Rate (₹)</th><th>Cost (₹)</th><th>Supplier</th><th>Remark</th><th>Action</th></tr></thead>
+              <thead><tr><th class="sortable" data-col="date">Date <span class="sort-icon"></span></th><th class="sortable" data-col="billNo">Bill No <span class="sort-icon"></span></th><th class="sortable" data-col="item">Item <span class="sort-icon"></span></th><th class="sortable" data-col="brand">Brand <span class="sort-icon"></span></th><th class="sortable" data-col="qty">Qty <span class="sort-icon"></span></th><th class="sortable" data-col="unit">Unit <span class="sort-icon"></span></th><th class="sortable" data-col="rate">Rate (₹) <span class="sort-icon"></span></th><th class="sortable" data-col="cost">Cost (₹) <span class="sort-icon"></span></th><th class="sortable" data-col="supplier">Supplier <span class="sort-icon"></span></th><th class="sortable" data-col="remark">Remark <span class="sort-icon"></span></th><th>Action</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -281,6 +283,7 @@
         <div class="table-card">
           <div class="table-header">
             <h3>Sales History</h3>
+            <button class="btn-secondary btn-sm" id="btnExportItemsOut">Export .xlsx</button>
           </div>
           <div class="filter-row" id="filtersItemsOut">
             <input type="date" id="filterOutDateFrom" class="filter-input" title="From date" />
@@ -292,7 +295,7 @@
           </div>
           <div class="table-wrapper">
             <table id="tableItemsOut">
-              <thead><tr><th>Date</th><th>Item</th><th>Category</th><th>Person</th><th>Qty</th><th>Unit</th><th>Amount (₹)</th><th>Remark</th><th>Action</th></tr></thead>
+              <thead><tr><th class="sortable" data-col="date">Date <span class="sort-icon"></span></th><th class="sortable" data-col="item">Item <span class="sort-icon"></span></th><th class="sortable" data-col="category">Category <span class="sort-icon"></span></th><th class="sortable" data-col="person">Person <span class="sort-icon"></span></th><th class="sortable" data-col="qty">Qty <span class="sort-icon"></span></th><th class="sortable" data-col="unit">Unit <span class="sort-icon"></span></th><th class="sortable" data-col="amount">Amount (₹) <span class="sort-icon"></span></th><th class="sortable" data-col="customer">Remark <span class="sort-icon"></span></th><th>Action</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -304,7 +307,7 @@
         <div class="inventory-header">
           <h3>Current Inventory</h3>
           <div class="inventory-actions">
-            <button class="btn-secondary" id="btnExportInventory">Export CSV</button>
+            <button class="btn-secondary" id="btnExportInventory">Export .xlsx</button>
           </div>
         </div>
         <div class="stat-cards small">
@@ -337,7 +340,7 @@
           </div>
           <div class="table-wrapper">
             <table id="tableInventory">
-              <thead><tr><th>Item</th><th>Brand</th><th>Supplier</th><th>Qty In</th><th>Qty Out</th><th>Balance</th><th>Unit</th><th>Rate/Unit (₹)</th><th>Stock Value (₹)</th><th>Status</th></tr></thead>
+              <thead><tr><th class="sortable" data-col="name">Item <span class="sort-icon"></span></th><th class="sortable" data-col="brand">Brand <span class="sort-icon"></span></th><th class="sortable" data-col="supplier">Supplier <span class="sort-icon"></span></th><th class="sortable" data-col="qtyIn">Qty In <span class="sort-icon"></span></th><th class="sortable" data-col="qtyOut">Qty Out <span class="sort-icon"></span></th><th class="sortable" data-col="balance">Balance <span class="sort-icon"></span></th><th class="sortable" data-col="unit">Unit <span class="sort-icon"></span></th><th class="sortable" data-col="avgCost">Rate/Unit (₹) <span class="sort-icon"></span></th><th class="sortable" data-col="value">Stock Value (₹) <span class="sort-icon"></span></th><th class="sortable" data-col="status">Status <span class="sort-icon"></span></th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -383,7 +386,10 @@
         <div class="table-card">
           <div class="table-header">
             <h3>Expense Records</h3>
-            <button class="btn-sm" id="clearFiltersExp">Clear Filters</button>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn-secondary btn-sm" id="btnExportExpenses">Export .xlsx</button>
+              <button class="btn-sm" id="clearFiltersExp">Clear Filters</button>
+            </div>
           </div>
           <div class="filter-row">
             <input type="date" id="filterExpDateFrom" class="filter-input" title="From date" />
@@ -404,7 +410,7 @@
           </div>
           <div class="table-wrapper">
             <table id="tableExpenses">
-              <thead><tr><th>Date</th><th>Category</th><th>Amount (₹)</th><th>Description</th><th>Action</th></tr></thead>
+              <thead><tr><th class="sortable" data-col="date">Date <span class="sort-icon"></span></th><th class="sortable" data-col="category">Category <span class="sort-icon"></span></th><th class="sortable" data-col="amount">Amount (₹) <span class="sort-icon"></span></th><th class="sortable" data-col="note">Description <span class="sort-icon"></span></th><th>Action</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -414,7 +420,10 @@
         <div class="table-card">
           <div class="table-header">
             <h3>Month-wise Category Expense</h3>
-            <select id="expMonthFY" class="filter-input" style="width:auto"></select>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn-secondary btn-sm" id="btnExportExpMonthly">Export .xlsx</button>
+              <select id="expMonthFY" class="filter-input" style="width:auto"></select>
+            </div>
           </div>
           <div class="table-wrapper">
             <table id="tableExpMonthly">
@@ -469,18 +478,21 @@
         </div>
 
         <div class="table-card">
-          <h3>Month-wise Breakdown</h3>
+          <div class="table-header">
+            <h3>Month-wise Breakdown</h3>
+            <button class="btn-secondary btn-sm" id="btnExportPnl">Export .xlsx</button>
+          </div>
           <div class="table-wrapper">
             <table id="tablePnl">
               <thead>
                 <tr>
-                  <th>Month</th>
-                  <th>Revenue (₹)</th>
-                  <th>Item Costs (₹)</th>
-                  <th>Other Expenses (₹)</th>
-                  <th>Total Costs (₹)</th>
-                  <th>Net P&amp;L (₹)</th>
-                  <th>Margin %</th>
+                  <th class="sortable" data-col="0">Month <span class="sort-icon"></span></th>
+                  <th class="sortable" data-col="1">Revenue (₹) <span class="sort-icon"></span></th>
+                  <th class="sortable" data-col="2">Item Costs (₹) <span class="sort-icon"></span></th>
+                  <th class="sortable" data-col="3">Other Expenses (₹) <span class="sort-icon"></span></th>
+                  <th class="sortable" data-col="4">Total Costs (₹) <span class="sort-icon"></span></th>
+                  <th class="sortable" data-col="5">Net P&amp;L (₹) <span class="sort-icon"></span></th>
+                  <th class="sortable" data-col="6">Margin % <span class="sort-icon"></span></th>
                 </tr>
               </thead>
               <tbody></tbody>
