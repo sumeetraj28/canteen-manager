@@ -383,12 +383,51 @@
         <div class="table-card">
           <div class="table-header">
             <h3>Expense Records</h3>
-            <input type="text" id="searchExpenses" class="search-input" placeholder="Search expenses..." />
+            <button class="btn-sm" id="clearFiltersExp">Clear Filters</button>
+          </div>
+          <div class="filter-row">
+            <input type="date" id="filterExpDateFrom" class="filter-input" title="From date" />
+            <input type="date" id="filterExpDateTo" class="filter-input" title="To date" />
+            <select id="filterExpCategory" class="filter-input">
+              <option value="">All Categories</option>
+              <option value="Salary">Salary / Wages</option>
+              <option value="Rent">Rent</option>
+              <option value="Electricity">Electricity</option>
+              <option value="Gas">Gas / Fuel</option>
+              <option value="Water">Water</option>
+              <option value="Maintenance">Maintenance</option>
+              <option value="Equipment">Equipment</option>
+              <option value="Transport">Transport</option>
+              <option value="Miscellaneous">Miscellaneous</option>
+            </select>
+            <input type="text" id="filterExpDesc" class="filter-input" placeholder="Search description..." />
           </div>
           <div class="table-wrapper">
             <table id="tableExpenses">
               <thead><tr><th>Date</th><th>Category</th><th>Amount (₹)</th><th>Description</th><th>Action</th></tr></thead>
               <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Month-wise Category Expense -->
+        <div class="table-card">
+          <div class="table-header">
+            <h3>Month-wise Category Expense</h3>
+            <select id="expMonthFY" class="filter-input" style="width:auto"></select>
+          </div>
+          <div class="table-wrapper">
+            <table id="tableExpMonthly">
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th>Apr</th><th>May</th><th>Jun</th><th>Jul</th><th>Aug</th><th>Sep</th>
+                  <th>Oct</th><th>Nov</th><th>Dec</th><th>Jan</th><th>Feb</th><th>Mar</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+              <tfoot><tr id="expMonthlyTotalRow"></tr></tfoot>
             </table>
           </div>
         </div>

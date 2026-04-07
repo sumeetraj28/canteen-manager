@@ -249,12 +249,27 @@
     }).catch(() => toast('Failed to save', true));
   });
 
-  function renderExpenses(filter = '') {
+  const EXP_CATEGORIES = ['Salary','Rent','Electricity','Gas','Water','Maintenance','Equipment','Transport','Miscellaneous'];
+
+  function getExpFilters() {
+    return {
+      dateFrom: $('#filterExpDateFrom').value,
+      dateTo: $('#filterExpDateTo').value,
+      category: $('#filterExpCategory').value,
+      desc: $('#filterExpDesc').value.trim().toLowerCase()
+    };
+  }
+
+  function renderExpenses() {
+    const f = getExpFilters();
     const tbody = $('#tableExpenses tbody');
-    const filtered = expenses.filter(r =>
-      r.category.toLowerCase().includes(filter.toLowerCase()) ||
-      (r.note || '').toLowerCase().includes(filter.toLowerCase())
-    );
+    const filtered = expenses.filter(r => {
+      if (f.dateFrom && r.date < f.dateFrom) return false;
+      if (f.dateTo && r.date > f.dateTo) return false;
+      if (f.category && r.category !== f.category) return false;
+      if (f.desc && !(r.note || '').toLowerCase().includes(f.desc)) return false;
+      return true;
+    });
     tbody.innerHTML = filtered.length === 0
       ? '<tr><td colspan="5" style="text-align:center;color:var(--text-light);padding:32px">No expenses recorded yet</td></tr>'
       : filtered.map(r => `<tr>
@@ -262,9 +277,80 @@
           <td>${sanitize(r.note || '—')}</td>
           <td><button class="btn-delete" data-id="${sanitize(r.id)}" data-type="exp">Delete</button></td>
         </tr>`).join('');
+
+    renderExpMonthly();
   }
 
-  $('#searchExpenses').addEventListener('input', (e) => renderExpenses(e.target.value));
+  ['filterExpDateFrom','filterExpDateTo','filterExpDesc'].forEach(id => {
+    $('#' + id).addEventListener('input', () => renderExpenses());
+  });
+  $('#filterExpCategory').addEventListener('change', () => renderExpenses());
+  $('#clearFiltersExp').addEventListener('click', () => {
+    ['filterExpDateFrom','filterExpDateTo','filterExpDesc'].forEach(id => { $('#' + id).value = ''; });
+    $('#filterExpCategory').value = '';
+    renderExpenses();
+  });
+
+  // ── Month-wise Category Expense ───────────────────
+  function renderExpMonthly() {
+    const yearSel = $('#expMonthFY');
+    const years = getFYears();
+    const prev = yearSel.value;
+    yearSel.innerHTML = years.map(y => `<option value="${y}">FY ${fyLabel(y)}</option>`).join('');
+    if (prev && years.includes(parseInt(prev))) yearSel.value = prev;
+
+    drawExpMonthly();
+  }
+
+  function drawExpMonthly() {
+    const fyStart = parseInt($('#expMonthFY').value);
+    // Build a map: category → [12 months]
+    const catMap = {};
+    EXP_CATEGORIES.forEach(c => { catMap[c] = MONTHS.map(() => 0); });
+
+    function fyIdx(dateStr) {
+      const d = new Date(dateStr);
+      const m = d.getMonth(), y = d.getFullYear();
+      if (m >= 3) return y === fyStart ? m - 3 : -1;
+      return y === fyStart + 1 ? m + 9 : -1;
+    }
+
+    expenses.forEach(r => {
+      const idx = fyIdx(r.date);
+      if (idx < 0) return;
+      if (!catMap[r.category]) catMap[r.category] = MONTHS.map(() => 0);
+      catMap[r.category][idx] += r.amount;
+    });
+
+    const tbody = $('#tableExpMonthly tbody');
+    const monthTotals = MONTHS.map(() => 0);
+    let grandTotal = 0;
+
+    tbody.innerHTML = EXP_CATEGORIES.map(cat => {
+      const row = catMap[cat];
+      const rowTotal = row.reduce((s, v) => s + v, 0);
+      if (rowTotal === 0) return ''; // skip categories with no data
+      row.forEach((v, i) => { monthTotals[i] += v; });
+      grandTotal += rowTotal;
+      return `<tr>
+        <td><strong>${sanitize(cat)}</strong></td>
+        ${row.map(v => `<td>${v ? fmt(v) : '—'}</td>`).join('')}
+        <td><strong>${fmt(rowTotal)}</strong></td>
+      </tr>`;
+    }).join('');
+
+    if (grandTotal === 0) {
+      tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;color:var(--text-light);padding:32px">No expenses for this financial year</td></tr>';
+      $('#expMonthlyTotalRow').innerHTML = '';
+    } else {
+      $('#expMonthlyTotalRow').innerHTML = `
+        <td><strong>TOTAL</strong></td>
+        ${monthTotals.map(v => `<td><strong>${v ? fmt(v) : '—'}</strong></td>`).join('')}
+        <td><strong>${fmt(grandTotal)}</strong></td>`;
+    }
+  }
+
+  $('#expMonthFY').addEventListener('change', drawExpMonthly);
 
   // ── Delete handler (delegated) ────────────────────
   document.addEventListener('click', (e) => {
