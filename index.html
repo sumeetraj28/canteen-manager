@@ -304,7 +304,6 @@
         <div class="inventory-header">
           <h3>Current Inventory</h3>
           <div class="inventory-actions">
-            <input type="text" id="searchInventory" class="search-input" placeholder="Search inventory..." />
             <button class="btn-secondary" id="btnExportInventory">Export CSV</button>
           </div>
         </div>
@@ -329,9 +328,16 @@
           </div>
         </div>
         <div class="table-card">
+          <div class="filter-row" id="filtersInventory">
+            <input type="text" id="filterInvItem" class="filter-input" placeholder="Item" />
+            <input type="text" id="filterInvBrand" class="filter-input" placeholder="Brand" />
+            <input type="text" id="filterInvSupplier" class="filter-input" placeholder="Supplier" />
+            <select id="filterInvStatus" class="filter-input"><option value="">Status</option><option value="OK">OK</option><option value="Low">Low</option><option value="Out">Out of Stock</option></select>
+            <button class="btn-secondary btn-sm" id="clearFiltersInv">Clear</button>
+          </div>
           <div class="table-wrapper">
             <table id="tableInventory">
-              <thead><tr><th>Item</th><th>Qty In</th><th>Qty Out</th><th>Balance</th><th>Unit</th><th>Avg Cost/Unit (₹)</th><th>Stock Value (₹)</th><th>Status</th></tr></thead>
+              <thead><tr><th>Item</th><th>Brand</th><th>Supplier</th><th>Qty In</th><th>Qty Out</th><th>Balance</th><th>Unit</th><th>Rate/Unit (₹)</th><th>Stock Value (₹)</th><th>Status</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>

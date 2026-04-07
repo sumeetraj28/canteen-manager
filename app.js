@@ -284,58 +284,91 @@
     const inv = {};
     itemsIn.forEach(r => {
       const key = r.item.toLowerCase();
-      if (!inv[key]) inv[key] = { name: r.item, unit: r.unit, qtyIn: 0, qtyOut: 0, totalCost: 0 };
+      if (!inv[key]) inv[key] = { name: r.item, brand: r.brand || '', unit: r.unit, supplier: r.supplier || '', qtyIn: 0, qtyOut: 0, totalCost: 0 };
       inv[key].qtyIn += r.qty;
       inv[key].totalCost += r.cost;
+      if (r.brand && !inv[key].brand) inv[key].brand = r.brand;
+      if (r.supplier && !inv[key].supplier) inv[key].supplier = r.supplier;
     });
     itemsOut.forEach(r => {
       const key = r.item.toLowerCase();
-      if (!inv[key]) inv[key] = { name: r.item, unit: r.unit, qtyIn: 0, qtyOut: 0, totalCost: 0 };
+      if (!inv[key]) inv[key] = { name: r.item, brand: '', unit: r.unit, supplier: '', qtyIn: 0, qtyOut: 0, totalCost: 0 };
       inv[key].qtyOut += r.qty;
     });
     return Object.values(inv).map(i => {
       const balance = Math.max(0, i.qtyIn - i.qtyOut);
       const avgCost = i.qtyIn > 0 ? i.totalCost / i.qtyIn : 0;
-      return { ...i, balance, avgCost, value: balance * avgCost };
+      let status;
+      if (balance <= 0) status = 'Out';
+      else if (balance < i.qtyIn * 0.2) status = 'Low';
+      else status = 'OK';
+      return { ...i, balance, avgCost, value: balance * avgCost, status };
     });
   }
 
-  function renderInventory(filter = '') {
-    const data = buildInventory().filter(i => i.name.toLowerCase().includes(filter.toLowerCase()));
+  function getInvFilters() {
+    return {
+      item: $('#filterInvItem').value.trim().toLowerCase(),
+      brand: $('#filterInvBrand').value.trim().toLowerCase(),
+      supplier: $('#filterInvSupplier').value.trim().toLowerCase(),
+      status: $('#filterInvStatus').value
+    };
+  }
+
+  function renderInventory() {
+    const f = getInvFilters();
+    const data = buildInventory().filter(i => {
+      if (f.item && !i.name.toLowerCase().includes(f.item)) return false;
+      if (f.brand && !i.brand.toLowerCase().includes(f.brand)) return false;
+      if (f.supplier && !i.supplier.toLowerCase().includes(f.supplier)) return false;
+      if (f.status && i.status !== f.status) return false;
+      return true;
+    });
     const tbody = $('#tableInventory tbody');
     let lowCount = 0;
 
     tbody.innerHTML = data.length === 0
-      ? '<tr><td colspan="8" style="text-align:center;color:var(--text-light);padding:32px">No inventory data</td></tr>'
+      ? '<tr><td colspan="10" style="text-align:center;color:var(--text-light);padding:32px">No inventory data</td></tr>'
       : data.map(i => {
-          let status, cls;
-          if (i.balance <= 0) { status = 'Out'; cls = 'status-out'; }
-          else if (i.balance < i.qtyIn * 0.2) { status = 'Low'; cls = 'status-low'; lowCount++; }
-          else { status = 'OK'; cls = 'status-ok'; }
+          let cls;
+          if (i.status === 'Out') cls = 'status-out';
+          else if (i.status === 'Low') { cls = 'status-low'; lowCount++; }
+          else cls = 'status-ok';
           return `<tr>
             <td><strong>${sanitize(i.name)}</strong></td>
+            <td>${sanitize(i.brand || '—')}</td><td>${sanitize(i.supplier || '—')}</td>
             <td>${i.qtyIn.toFixed(2)}</td><td>${i.qtyOut.toFixed(2)}</td>
             <td><strong>${i.balance.toFixed(2)}</strong></td><td>${sanitize(i.unit)}</td>
             <td>${fmt(i.avgCost)}</td><td>${fmt(i.value)}</td>
-            <td><span class="status-badge ${cls}">${status}</span></td>
+            <td><span class="status-badge ${cls}">${i.status}</span></td>
           </tr>`;
         }).join('');
 
-    $('#invTotalItems').textContent = data.length;
-    $('#invLowStock').textContent = lowCount;
-    const totalVal = data.reduce((s, i) => s + i.value, 0);
+    // Count low stock from unfiltered data for accurate stats
+    const allData = buildInventory();
+    $('#invTotalItems').textContent = allData.length;
+    $('#invLowStock').textContent = allData.filter(i => i.status === 'Low').length;
+    const totalVal = allData.reduce((s, i) => s + i.value, 0);
     $('#invTotalValue').textContent = fmt(totalVal);
   }
 
-  $('#searchInventory').addEventListener('input', (e) => renderInventory(e.target.value));
+  ['filterInvItem','filterInvBrand','filterInvSupplier'].forEach(id => {
+    $('#' + id).addEventListener('input', () => renderInventory());
+  });
+  $('#filterInvStatus').addEventListener('change', () => renderInventory());
+  $('#clearFiltersInv').addEventListener('click', () => {
+    ['filterInvItem','filterInvBrand','filterInvSupplier'].forEach(id => { $('#' + id).value = ''; });
+    $('#filterInvStatus').value = '';
+    renderInventory();
+  });
 
   // ── Export Inventory CSV ──────────────────────────
   $('#btnExportInventory').addEventListener('click', () => {
     const data = buildInventory();
     if (data.length === 0) return toast('No data to export', true);
-    let csv = 'Item,Qty In,Qty Out,Balance,Unit,Avg Cost,Stock Value\n';
+    let csv = 'Item,Brand,Supplier,Qty In,Qty Out,Balance,Unit,Rate/Unit,Stock Value,Status\n';
     data.forEach(i => {
-      csv += `"${i.name}",${i.qtyIn},${i.qtyOut},${i.balance},"${i.unit}",${i.avgCost.toFixed(2)},${i.value.toFixed(2)}\n`;
+      csv += `"${i.name}","${i.brand}","${i.supplier}",${i.qtyIn},${i.qtyOut},${i.balance},"${i.unit}",${i.avgCost.toFixed(2)},${i.value.toFixed(2)},"${i.status}"\n`;
     });
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
