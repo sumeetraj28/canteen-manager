@@ -240,19 +240,12 @@
                 <input type="text" id="outItem" placeholder="e.g. Meals, Snacks, Beverages" required />
               </div>
               <div class="form-group">
-                <label for="outCategory">Category</label>
-                <select id="outCategory">
-                  <option value="Cooked">Cooked</option>
-                  <option value="Ready-made">Ready-made</option>
-                </select>
+                <label for="outBrand">Brand</label>
+                <input type="text" id="outBrand" placeholder="e.g. Fortune, Tata" />
               </div>
               <div class="form-group">
-                <label for="outPerson">Person</label>
-                <select id="outPerson">
-                  <option value="Pradeep">Pradeep</option>
-                  <option value="Tulesh">Tulesh</option>
-                  <option value="Babulal">Babulal</option>
-                </select>
+                <label for="outSupplier">Supplier</label>
+                <input type="text" id="outSupplier" placeholder="Supplier name" />
               </div>
               <div class="form-group">
                 <label for="outQty">Quantity</label>
@@ -269,8 +262,27 @@
                 </select>
               </div>
               <div class="form-group">
+                <label for="outRate">Rate / Unit (₹)</label>
+                <input type="number" id="outRate" min="0" step="0.01" placeholder="Price per unit" />
+              </div>
+              <div class="form-group">
                 <label for="outPrice">Sale Amount (₹)</label>
                 <input type="number" id="outPrice" min="0" step="0.01" placeholder="Revenue" required />
+              </div>
+              <div class="form-group">
+                <label for="outCategory">Category</label>
+                <select id="outCategory">
+                  <option value="Cooked">Cooked</option>
+                  <option value="Ready-made">Ready-made</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="outPerson">Person</label>
+                <select id="outPerson">
+                  <option value="Pradeep">Pradeep</option>
+                  <option value="Tulesh">Tulesh</option>
+                  <option value="Babulal">Babulal</option>
+                </select>
               </div>
               <div class="form-group">
                 <label for="outCustomer">Remark</label>
@@ -295,7 +307,7 @@
           </div>
           <div class="table-wrapper">
             <table id="tableItemsOut">
-              <thead><tr><th class="sortable" data-col="date">Date <span class="sort-icon"></span></th><th class="sortable" data-col="item">Item <span class="sort-icon"></span></th><th class="sortable" data-col="category">Category <span class="sort-icon"></span></th><th class="sortable" data-col="person">Person <span class="sort-icon"></span></th><th class="sortable" data-col="qty">Qty <span class="sort-icon"></span></th><th class="sortable" data-col="unit">Unit <span class="sort-icon"></span></th><th class="sortable" data-col="amount">Amount (₹) <span class="sort-icon"></span></th><th class="sortable" data-col="customer">Remark <span class="sort-icon"></span></th><th>Action</th></tr></thead>
+              <thead><tr><th class="sortable" data-col="date">Date <span class="sort-icon"></span></th><th class="sortable" data-col="item">Item <span class="sort-icon"></span></th><th class="sortable" data-col="brand">Brand <span class="sort-icon"></span></th><th class="sortable" data-col="supplier">Supplier <span class="sort-icon"></span></th><th class="sortable" data-col="qty">Qty <span class="sort-icon"></span></th><th class="sortable" data-col="unit">Unit <span class="sort-icon"></span></th><th class="sortable" data-col="rate">Rate (₹) <span class="sort-icon"></span></th><th class="sortable" data-col="amount">Amount (₹) <span class="sort-icon"></span></th><th class="sortable" data-col="category">Category <span class="sort-icon"></span></th><th class="sortable" data-col="person">Person <span class="sort-icon"></span></th><th class="sortable" data-col="customer">Remark <span class="sort-icon"></span></th><th>Action</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>

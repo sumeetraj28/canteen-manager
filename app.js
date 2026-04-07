@@ -235,11 +235,14 @@
     const record = {
       date: $('#outDate').value,
       item: $('#outItem').value.trim(),
-      category: $('#outCategory').value,
-      person: $('#outPerson').value,
+      brand: $('#outBrand').value.trim(),
+      supplier: $('#outSupplier').value.trim(),
       qty: parseFloat($('#outQty').value),
       unit: $('#outUnit').value,
+      rate: parseFloat($('#outRate').value) || 0,
       amount: parseFloat($('#outPrice').value),
+      category: $('#outCategory').value,
+      person: $('#outPerson').value,
       customer: $('#outCustomer').value.trim(),
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     };
@@ -273,17 +276,19 @@
       return true;
     });
     filtered = applySort(filtered, 'tableItemsOut', (r, col) => {
-      if (col === 'qty' || col === 'amount') return r[col] || 0;
+      if (col === 'qty' || col === 'amount' || col === 'rate') return r[col] || 0;
       return r[col] || '';
     });
     lastFilteredItemsOut = filtered;
     tbody.innerHTML = filtered.length === 0
-      ? '<tr><td colspan="9" style="text-align:center;color:var(--text-light);padding:32px">No sales records yet</td></tr>'
+      ? '<tr><td colspan="12" style="text-align:center;color:var(--text-light);padding:32px">No sales records yet</td></tr>'
       : filtered.map(r => `<tr>
           <td>${sanitize(r.date)}</td><td>${sanitize(r.item)}</td>
-          <td>${sanitize(r.category || '—')}</td><td>${sanitize(r.person || '—')}</td>
+          <td>${sanitize(r.brand || '—')}</td><td>${sanitize(r.supplier || '—')}</td>
           <td>${r.qty}</td><td>${sanitize(r.unit)}</td>
-          <td>${fmt(r.amount)}</td><td>${sanitize(r.customer || '—')}</td>
+          <td>${fmt(r.rate || 0)}</td><td>${fmt(r.amount)}</td>
+          <td>${sanitize(r.category || '—')}</td><td>${sanitize(r.person || '—')}</td>
+          <td>${sanitize(r.customer || '—')}</td>
           <td><button class="btn-delete" data-id="${sanitize(r.id)}" data-type="out">Delete</button></td>
         </tr>`).join('');
   }
@@ -555,8 +560,8 @@
 
   $('#btnExportItemsOut').addEventListener('click', () => {
     exportXlsx(
-      lastFilteredItemsOut.map(r => [r.date, r.item, r.category || '', r.person || '', r.qty, r.unit, r.amount, r.customer || '']),
-      ['Date','Item','Category','Person','Qty','Unit','Amount','Remark'],
+      lastFilteredItemsOut.map(r => [r.date, r.item, r.brand || '', r.supplier || '', r.qty, r.unit, r.rate || 0, r.amount, r.category || '', r.person || '', r.customer || '']),
+      ['Date','Item','Brand','Supplier','Qty','Unit','Rate','Amount','Category','Person','Remark'],
       'canteen_items_out'
     );
   });
