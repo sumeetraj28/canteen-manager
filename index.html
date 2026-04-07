@@ -65,10 +65,6 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
         Sales
       </a>
-      <a href="#" class="nav-item" data-page="pnl">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 5 5-9"/></svg>
-        P&amp;L Statement
-      </a>
       <a href="#" class="nav-item" data-page="changelog">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
         Changelog
@@ -257,6 +253,91 @@
               <tbody></tbody>
               <tfoot><tr id="dashMonthlyTotalRow"><td><strong>TOTAL</strong></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr></tfoot>
             </table>
+          </div>
+        </div>
+
+        <!-- ═══════════ P&L SECTION ═══════════ -->
+        <div style="margin-top:32px;padding-top:24px;border-top:3px solid var(--border)">
+          <div class="pnl-controls" style="margin-bottom:20px">
+            <h3>📊 Profit &amp; Loss Statement</h3>
+            <div class="pnl-filters">
+              <button class="btn-secondary btn-sm" id="btnExportPnl">Export P&amp;L .xlsx</button>
+            </div>
+          </div>
+
+          <!-- P&L KPIs -->
+          <div class="stat-cards" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">
+            <div class="stat-card card-green"><div class="stat-info"><span class="stat-label">Total Revenue</span><span class="stat-value" id="pnlRevenue">₹0</span></div></div>
+            <div class="stat-card card-red"><div class="stat-info"><span class="stat-label">Item Costs</span><span class="stat-value" id="pnlItemCosts">₹0</span></div></div>
+            <div class="stat-card card-orange"><div class="stat-info"><span class="stat-label">Other Expenses</span><span class="stat-value" id="pnlOtherExp">₹0</span></div></div>
+            <div class="stat-card card-red"><div class="stat-info"><span class="stat-label">Total Costs</span><span class="stat-value" id="pnlExpenses">₹0</span></div></div>
+            <div class="stat-card card-blue"><div class="stat-info"><span class="stat-label">Net Profit / Loss</span><span class="stat-value" id="pnlNet">₹0</span></div></div>
+            <div class="stat-card card-orange"><div class="stat-info"><span class="stat-label">Profit Margin</span><span class="stat-value" id="pnlMargin">—</span></div></div>
+          </div>
+
+          <div class="stat-cards" style="grid-template-columns:repeat(auto-fit,minmax(190px,1fr))">
+            <div class="stat-card card-green"><div class="stat-info"><span class="stat-label">Cost-to-Revenue Ratio</span><span class="stat-value" id="pnlCostRatio">—</span></div></div>
+            <div class="stat-card card-blue"><div class="stat-info"><span class="stat-label">Avg Monthly Revenue</span><span class="stat-value" id="pnlAvgMonthRev">₹0</span></div></div>
+            <div class="stat-card card-orange"><div class="stat-info"><span class="stat-label">Avg Monthly Cost</span><span class="stat-value" id="pnlAvgMonthCost">₹0</span></div></div>
+            <div class="stat-card card-green"><div class="stat-info"><span class="stat-label">Best Month</span><span class="stat-value" id="pnlBestMonth">—</span></div></div>
+            <div class="stat-card card-red"><div class="stat-info"><span class="stat-label">Worst Month</span><span class="stat-value" id="pnlWorstMonth">—</span></div></div>
+          </div>
+
+          <!-- P&L Charts -->
+          <div class="charts-row">
+            <div class="chart-card"><h3>Month-wise P&amp;L Overview</h3><canvas id="chartPnlDetailed"></canvas></div>
+            <div class="chart-card"><h3>Cost Composition</h3><canvas id="chartPnlCostSplit"></canvas></div>
+          </div>
+          <div class="charts-row">
+            <div class="chart-card"><h3>Cumulative Profit / Loss Trend</h3><canvas id="chartPnlCumulative"></canvas></div>
+            <div class="chart-card"><h3>Month-wise Profit Margin %</h3><canvas id="chartPnlMarginTrend"></canvas></div>
+          </div>
+
+          <!-- P&L Detailed Table -->
+          <div class="table-card">
+            <div class="table-header"><h3>Month-wise Detailed Breakdown</h3></div>
+            <div class="table-wrapper">
+              <table id="tablePnl">
+                <thead>
+                  <tr>
+                    <th class="sortable" data-col="0">Month <span class="sort-icon"></span></th>
+                    <th class="sortable" data-col="1">Revenue (₹) <span class="sort-icon"></span></th>
+                    <th class="sortable" data-col="2">Item Costs (₹) <span class="sort-icon"></span></th>
+                    <th class="sortable" data-col="3">Other Expenses (₹) <span class="sort-icon"></span></th>
+                    <th class="sortable" data-col="4">Total Costs (₹) <span class="sort-icon"></span></th>
+                    <th class="sortable" data-col="5">Net P&amp;L (₹) <span class="sort-icon"></span></th>
+                    <th class="sortable" data-col="6">Margin % <span class="sort-icon"></span></th>
+                    <th class="sortable" data-col="7">Cumulative (₹) <span class="sort-icon"></span></th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+                <tfoot><tr id="pnlTotalRow"><td><strong>TOTAL</strong></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr></tfoot>
+              </table>
+            </div>
+          </div>
+
+          <!-- Revenue Sources -->
+          <div class="table-card">
+            <div class="table-header"><h3>Revenue Sources (Sale Types)</h3></div>
+            <div class="table-wrapper">
+              <table id="pnlRevenueSourcesTable">
+                <thead><tr><th>Sale Type</th><th>Apr</th><th>May</th><th>Jun</th><th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Total</th><th>% Share</th></tr></thead>
+                <tbody></tbody>
+                <tfoot><tr id="pnlRevSourceTotalRow"></tr></tfoot>
+              </table>
+            </div>
+          </div>
+
+          <!-- Expense Category Breakdown -->
+          <div class="table-card">
+            <div class="table-header"><h3>Expense Category Breakdown</h3></div>
+            <div class="table-wrapper">
+              <table id="pnlExpCategoryTable">
+                <thead><tr><th>Category</th><th>Apr</th><th>May</th><th>Jun</th><th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Total</th><th>% Share</th></tr></thead>
+                <tbody></tbody>
+                <tfoot><tr id="pnlExpCatTotalRow"></tr></tfoot>
+              </table>
+            </div>
           </div>
         </div>
 
@@ -829,168 +910,6 @@
               </thead>
               <tbody></tbody>
               <tfoot><tr id="saleTypeTotalRow"></tr></tfoot>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- ==================== P&L STATEMENT ==================== -->
-      <section class="page" id="page-pnl">
-        <div class="pnl-controls">
-          <h3>Profit &amp; Loss Statement</h3>
-          <div class="pnl-filters">
-            <select id="pnlYear"></select>
-            <button class="btn-secondary btn-sm" id="btnExportPnl">Export .xlsx</button>
-          </div>
-        </div>
-
-        <!-- Summary KPIs -->
-        <div class="stat-cards" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">
-          <div class="stat-card card-green">
-            <div class="stat-info">
-              <span class="stat-label">Total Revenue</span>
-              <span class="stat-value" id="pnlRevenue">₹0</span>
-            </div>
-          </div>
-          <div class="stat-card card-red">
-            <div class="stat-info">
-              <span class="stat-label">Item Costs</span>
-              <span class="stat-value" id="pnlItemCosts">₹0</span>
-            </div>
-          </div>
-          <div class="stat-card card-orange">
-            <div class="stat-info">
-              <span class="stat-label">Other Expenses</span>
-              <span class="stat-value" id="pnlOtherExp">₹0</span>
-            </div>
-          </div>
-          <div class="stat-card card-red">
-            <div class="stat-info">
-              <span class="stat-label">Total Costs</span>
-              <span class="stat-value" id="pnlExpenses">₹0</span>
-            </div>
-          </div>
-          <div class="stat-card card-blue">
-            <div class="stat-info">
-              <span class="stat-label">Net Profit / Loss</span>
-              <span class="stat-value" id="pnlNet">₹0</span>
-            </div>
-          </div>
-          <div class="stat-card card-orange">
-            <div class="stat-info">
-              <span class="stat-label">Profit Margin</span>
-              <span class="stat-value" id="pnlMargin">—</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Ratio Cards -->
-        <div class="stat-cards" style="grid-template-columns:repeat(auto-fit,minmax(190px,1fr))">
-          <div class="stat-card card-green">
-            <div class="stat-info">
-              <span class="stat-label">Cost-to-Revenue Ratio</span>
-              <span class="stat-value" id="pnlCostRatio">—</span>
-            </div>
-          </div>
-          <div class="stat-card card-blue">
-            <div class="stat-info">
-              <span class="stat-label">Avg Monthly Revenue</span>
-              <span class="stat-value" id="pnlAvgMonthRev">₹0</span>
-            </div>
-          </div>
-          <div class="stat-card card-orange">
-            <div class="stat-info">
-              <span class="stat-label">Avg Monthly Cost</span>
-              <span class="stat-value" id="pnlAvgMonthCost">₹0</span>
-            </div>
-          </div>
-          <div class="stat-card card-green">
-            <div class="stat-info">
-              <span class="stat-label">Best Month</span>
-              <span class="stat-value" id="pnlBestMonth">—</span>
-            </div>
-          </div>
-          <div class="stat-card card-red">
-            <div class="stat-info">
-              <span class="stat-label">Worst Month</span>
-              <span class="stat-value" id="pnlWorstMonth">—</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Charts -->
-        <div class="charts-row">
-          <div class="chart-card">
-            <h3>Month-wise P&amp;L Overview</h3>
-            <canvas id="chartPnlDetailed"></canvas>
-          </div>
-          <div class="chart-card">
-            <h3>Cost Composition</h3>
-            <canvas id="chartPnlCostSplit"></canvas>
-          </div>
-        </div>
-
-        <div class="charts-row">
-          <div class="chart-card">
-            <h3>Cumulative Profit / Loss Trend</h3>
-            <canvas id="chartPnlCumulative"></canvas>
-          </div>
-          <div class="chart-card">
-            <h3>Month-wise Profit Margin %</h3>
-            <canvas id="chartPnlMarginTrend"></canvas>
-          </div>
-        </div>
-
-        <!-- Detailed Month-wise Table -->
-        <div class="table-card">
-          <div class="table-header">
-            <h3>Month-wise Detailed Breakdown</h3>
-          </div>
-          <div class="table-wrapper">
-            <table id="tablePnl">
-              <thead>
-                <tr>
-                  <th class="sortable" data-col="0">Month <span class="sort-icon"></span></th>
-                  <th class="sortable" data-col="1">Revenue (₹) <span class="sort-icon"></span></th>
-                  <th class="sortable" data-col="2">Item Costs (₹) <span class="sort-icon"></span></th>
-                  <th class="sortable" data-col="3">Other Expenses (₹) <span class="sort-icon"></span></th>
-                  <th class="sortable" data-col="4">Total Costs (₹) <span class="sort-icon"></span></th>
-                  <th class="sortable" data-col="5">Net P&amp;L (₹) <span class="sort-icon"></span></th>
-                  <th class="sortable" data-col="6">Margin % <span class="sort-icon"></span></th>
-                  <th class="sortable" data-col="7">Cumulative (₹) <span class="sort-icon"></span></th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-              <tfoot>
-                <tr id="pnlTotalRow">
-                  <td><strong>TOTAL</strong></td>
-                  <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
-
-        <!-- Revenue Sources -->
-        <div class="table-card">
-          <div class="table-header"><h3>Revenue Sources (Sale Types)</h3></div>
-          <div class="table-wrapper">
-            <table id="pnlRevenueSourcesTable">
-              <thead><tr><th>Sale Type</th><th>Apr</th><th>May</th><th>Jun</th><th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Total</th><th>% Share</th></tr></thead>
-              <tbody></tbody>
-              <tfoot><tr id="pnlRevSourceTotalRow"></tr></tfoot>
-            </table>
-          </div>
-        </div>
-
-        <!-- Expense Category Breakdown -->
-        <div class="table-card">
-          <div class="table-header"><h3>Expense Category Breakdown</h3></div>
-          <div class="table-wrapper">
-            <table id="pnlExpCategoryTable">
-              <thead><tr><th>Category</th><th>Apr</th><th>May</th><th>Jun</th><th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Total</th><th>% Share</th></tr></thead>
-              <tbody></tbody>
-              <tfoot><tr id="pnlExpCatTotalRow"></tr></tfoot>
             </table>
           </div>
         </div>

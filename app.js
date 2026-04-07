@@ -96,7 +96,7 @@
   // ── Navigation ────────────────────────────────────
   const navItems = $$('.nav-item');
   const pages = $$('.page');
-  const titles = { dashboard:'Dashboard', 'items-in':'Items In', 'items-out':'Items Out', inventory:'Inventory', expenses:'Other Expenses', sales:'Sales', pnl:'P&L Statement', changelog:'Changelog' };
+  const titles = { dashboard:'Dashboard', 'items-in':'Items In', 'items-out':'Items Out', inventory:'Inventory', expenses:'Other Expenses', sales:'Sales', changelog:'Changelog' };
 
   function navigate(page) {
     navItems.forEach(n => n.classList.toggle('active', n.dataset.page === page));
@@ -108,7 +108,6 @@
     if (page === 'inventory') renderInventory();
     if (page === 'expenses')  renderExpenses();
     if (page === 'sales')     renderSales();
-    if (page === 'pnl')       renderPnl();
     if (page === 'changelog') renderAuthLog();
     $('#sidebar').classList.remove('open');
   }
@@ -150,7 +149,6 @@
     if (activePage === 'inventory') renderInventory();
     if (activePage === 'expenses')  renderExpenses();
     if (activePage === 'sales')     renderSales();
-    if (activePage === 'pnl')       renderPnl();
     if (activePage === 'changelog') renderAuthLog();
   }
 
@@ -1108,254 +1106,9 @@
 
   function fyLabel(y) { return y + '–' + String(y + 1).slice(2); }
 
-  // ── P&L Rendering ────────────────────────────────
-  let pnlCharts = [];
-  let lastPnlData = [];
-
-  function renderPnl() {
-    const yearSel = $('#pnlYear');
-    const years = getFYears();
-    yearSel.innerHTML = years.map(y => `<option value="${y}">FY ${fyLabel(y)}</option>`).join('');
-
-    function draw() {
-      pnlCharts.forEach(c => c.destroy());
-      pnlCharts = [];
-
-      const year = parseInt(yearSel.value);
-      const data = computeMonthlyPnl(year);
-
-      function fyIndex(dateStr) {
-        const d = new Date(dateStr);
-        const m = d.getMonth(), y = d.getFullYear();
-        if (m >= 3) return y === year ? m - 3 : -1;
-        return y === year + 1 ? m + 9 : -1;
-      }
-
-      // Cumulative P&L
-      let cumul = 0;
-      lastPnlData = data.map((m, i) => {
-        cumul += m.net;
-        return {
-          month: MONTHS[i], revenue: m.revenue, itemCost: m.itemCost, otherExp: m.otherExp,
-          totalCost: m.totalCost, net: m.net,
-          margin: m.revenue > 0 ? +((m.net / m.revenue) * 100).toFixed(1) : 0,
-          cumulative: cumul
-        };
-      });
-
-      const pnlCols = ['month','revenue','itemCost','otherExp','totalCost','net','margin','cumulative'];
-      let pnlRows = lastPnlData;
-      const ps = sortState['tablePnl'];
-      if (ps) {
-        pnlRows = [...pnlRows].sort((a, b) => {
-          const key = pnlCols[parseInt(ps.col)] || 'month';
-          const va = a[key], vb = b[key];
-          if (typeof va === 'number' && typeof vb === 'number') return ps.dir === 'asc' ? va - vb : vb - va;
-          return ps.dir === 'asc' ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
-        });
-      }
-
-      const totRev = data.reduce((s, m) => s + m.revenue, 0);
-      const totItemCost = data.reduce((s, m) => s + m.itemCost, 0);
-      const totOtherExp = data.reduce((s, m) => s + m.otherExp, 0);
-      const totCost = totItemCost + totOtherExp;
-      const totNet = totRev - totCost;
-      const totalMargin = totRev > 0 ? ((totNet / totRev) * 100).toFixed(1) : '—';
-
-      // Active months count
-      const activeMonths = data.filter(m => m.revenue > 0 || m.totalCost > 0).length || 1;
-
-      // Best & worst months
-      const monthsWithData = data.map((m, i) => ({ ...m, label: MONTHS[i] })).filter(m => m.revenue > 0 || m.totalCost > 0);
-      const bestMonth = monthsWithData.length ? monthsWithData.reduce((a, b) => a.net > b.net ? a : b) : null;
-      const worstMonth = monthsWithData.length ? monthsWithData.reduce((a, b) => a.net < b.net ? a : b) : null;
-
-      // KPI Row 1
-      $('#pnlRevenue').textContent = fmt(totRev);
-      $('#pnlItemCosts').textContent = fmt(totItemCost);
-      $('#pnlOtherExp').textContent = fmt(totOtherExp);
-      $('#pnlExpenses').textContent = fmt(totCost);
-      const netEl = $('#pnlNet');
-      netEl.textContent = fmt(totNet);
-      netEl.className = 'stat-value ' + (totNet >= 0 ? 'profit' : 'loss');
-      const mgEl = $('#pnlMargin');
-      mgEl.textContent = totalMargin !== '—' ? totalMargin + '%' : '—';
-      mgEl.className = 'stat-value ' + (totNet >= 0 ? 'profit' : 'loss');
-
-      // KPI Row 2
-      $('#pnlCostRatio').textContent = totRev > 0 ? ((totCost / totRev) * 100).toFixed(1) + '%' : '—';
-      $('#pnlAvgMonthRev').textContent = fmt(totRev / activeMonths);
-      $('#pnlAvgMonthCost').textContent = fmt(totCost / activeMonths);
-      $('#pnlBestMonth').textContent = bestMonth ? bestMonth.label + ' (' + fmt(bestMonth.net) + ')' : '—';
-      $('#pnlBestMonth').className = 'stat-value profit';
-      $('#pnlWorstMonth').textContent = worstMonth ? worstMonth.label + ' (' + fmt(worstMonth.net) + ')' : '—';
-      $('#pnlWorstMonth').className = 'stat-value loss';
-
-      // Table
-      const tbody = $('#tablePnl tbody');
-      tbody.innerHTML = pnlRows.map(r => {
-        const marginStr = r.margin ? r.margin + '%' : '—';
-        return `<tr>
-          <td>${r.month}</td>
-          <td>${fmt(r.revenue)}</td><td>${fmt(r.itemCost)}</td>
-          <td>${fmt(r.otherExp)}</td><td>${fmt(r.totalCost)}</td>
-          <td class="${r.net >= 0 ? 'profit' : 'loss'}">${fmt(r.net)}</td>
-          <td>${marginStr}</td>
-          <td class="${r.cumulative >= 0 ? 'profit' : 'loss'}">${fmt(r.cumulative)}</td>
-        </tr>`;
-      }).join('');
-
-      const finalCumul = lastPnlData.length ? lastPnlData[lastPnlData.length - 1].cumulative : 0;
-      const row = $('#pnlTotalRow');
-      row.innerHTML = `
-        <td><strong>TOTAL</strong></td>
-        <td><strong>${fmt(totRev)}</strong></td><td><strong>${fmt(totItemCost)}</strong></td>
-        <td><strong>${fmt(totOtherExp)}</strong></td><td><strong>${fmt(totCost)}</strong></td>
-        <td class="${totNet >= 0 ? 'profit' : 'loss'}"><strong>${fmt(totNet)}</strong></td>
-        <td><strong>${totalMargin !== '—' ? totalMargin + '%' : '—'}</strong></td>
-        <td class="${finalCumul >= 0 ? 'profit' : 'loss'}"><strong>${fmt(finalCumul)}</strong></td>`;
-
-      // Chart 1: Month-wise P&L bar+line
-      pnlCharts.push(new Chart($('#chartPnlDetailed'), {
-        type: 'bar',
-        data: {
-          labels: MONTHS,
-          datasets: [
-            { label: 'Revenue', data: data.map(m => m.revenue), backgroundColor: '#22c55e', borderRadius: 6, order: 2 },
-            { label: 'Item Costs', data: data.map(m => m.itemCost), backgroundColor: '#ef4444', borderRadius: 6, order: 2 },
-            { label: 'Other Expenses', data: data.map(m => m.otherExp), backgroundColor: '#f59e0b', borderRadius: 6, order: 2 },
-            { label: 'Net P&L', data: data.map(m => m.net), type: 'line', borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,.1)', fill: true, tension: .4, pointRadius: 5, pointBackgroundColor: '#6366f1', order: 1 }
-          ]
-        },
-        options: {
-          responsive: true,
-          interaction: { mode: 'index', intersect: false },
-          plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + fmt(ctx.raw) } } },
-          scales: { y: { beginAtZero: true, ticks: { callback: v => '₹' + v.toLocaleString('en-IN') } } }
-        }
-      }));
-
-      // Chart 2: Cost composition doughnut
-      pnlCharts.push(new Chart($('#chartPnlCostSplit'), {
-        type: 'doughnut',
-        data: {
-          labels: ['Item Costs', 'Other Expenses'],
-          datasets: [{ data: [totItemCost, totOtherExp], backgroundColor: ['#ef4444', '#f59e0b'], borderWidth: 0, spacing: 4, borderRadius: 6 }]
-        },
-        options: { responsive: true, cutout: '60%', plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: ctx => ctx.label + ': ' + fmt(ctx.raw) } } } }
-      }));
-
-      // Chart 3: Cumulative P&L trend
-      let c = 0;
-      const cumulData = data.map(m => { c += m.net; return c; });
-      pnlCharts.push(new Chart($('#chartPnlCumulative'), {
-        type: 'line',
-        data: {
-          labels: MONTHS,
-          datasets: [{
-            label: 'Cumulative P&L', data: cumulData,
-            borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,.08)', fill: true,
-            tension: .4, pointRadius: 5, pointBackgroundColor: cumulData.map(v => v >= 0 ? '#22c55e' : '#ef4444')
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => 'Cumulative: ' + fmt(ctx.raw) } } },
-          scales: { y: { ticks: { callback: v => '₹' + v.toLocaleString('en-IN') } } }
-        }
-      }));
-
-      // Chart 4: Margin trend
-      const margins = data.map(m => m.revenue > 0 ? +((m.net / m.revenue) * 100).toFixed(1) : 0);
-      pnlCharts.push(new Chart($('#chartPnlMarginTrend'), {
-        type: 'bar',
-        data: {
-          labels: MONTHS,
-          datasets: [{
-            label: 'Margin %', data: margins,
-            backgroundColor: margins.map(v => v >= 0 ? '#22c55e' : '#ef4444'),
-            borderRadius: 4
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.raw + '%' } } },
-          scales: { y: { ticks: { callback: v => v + '%' } } }
-        }
-      }));
-
-      // Revenue Sources (Sale Types from itemsOut — using category/person, and from sales collection by type)
-      const revSrcMap = {};
-      // From sales collection by type
-      sales.forEach(r => {
-        const idx = fyIndex(r.date);
-        if (idx < 0) return;
-        const k = (r.type || 'Unknown').trim();
-        const lk = k.toLowerCase();
-        if (!revSrcMap[lk]) revSrcMap[lk] = { name: k, months: MONTHS.map(() => 0) };
-        revSrcMap[lk].months[idx] += r.amount;
-      });
-      // If no sales collection data, use itemsOut categories
-      if (Object.keys(revSrcMap).length === 0) {
-        itemsOut.forEach(r => {
-          const idx = fyIndex(r.date);
-          if (idx < 0) return;
-          const k = (r.category || 'Uncategorized').trim();
-          const lk = k.toLowerCase();
-          if (!revSrcMap[lk]) revSrcMap[lk] = { name: k, months: MONTHS.map(() => 0) };
-          revSrcMap[lk].months[idx] += r.amount;
-        });
-      }
-
-      const revSrcRows = Object.values(revSrcMap);
-      const revGrand = revSrcRows.reduce((s, r) => s + r.months.reduce((a, b) => a + b, 0), 0);
-      const revSrcTbody = $('#pnlRevenueSourcesTable tbody');
-      const revMonthTotals = MONTHS.map(() => 0);
-      revSrcTbody.innerHTML = revSrcRows.length === 0
-        ? '<tr><td colspan="15" style="text-align:center;color:var(--text-light);padding:24px">No data</td></tr>'
-        : revSrcRows.filter(r => r.months.some(v => v)).map(r => {
-            const rowTotal = r.months.reduce((s, v) => s + v, 0);
-            r.months.forEach((v, i) => { revMonthTotals[i] += v; });
-            const pct = revGrand > 0 ? ((rowTotal / revGrand) * 100).toFixed(1) + '%' : '—';
-            return `<tr><td><strong>${sanitize(r.name)}</strong></td>${r.months.map(v => `<td>${v ? fmt(v) : '—'}</td>`).join('')}<td><strong>${fmt(rowTotal)}</strong></td><td>${pct}</td></tr>`;
-          }).join('');
-      if (revGrand > 0) {
-        $('#pnlRevSourceTotalRow').innerHTML = `<td><strong>TOTAL</strong></td>${revMonthTotals.map(v => `<td><strong>${v ? fmt(v) : '—'}</strong></td>`).join('')}<td><strong>${fmt(revGrand)}</strong></td><td><strong>100%</strong></td>`;
-      } else { $('#pnlRevSourceTotalRow').innerHTML = ''; }
-
-      // Expense Category Breakdown
-      const expCatMap = {};
-      expenses.forEach(r => {
-        const idx = fyIndex(r.date);
-        if (idx < 0) return;
-        const k = (r.category || 'Other').trim();
-        const lk = k.toLowerCase();
-        if (!expCatMap[lk]) expCatMap[lk] = { name: k, months: MONTHS.map(() => 0) };
-        expCatMap[lk].months[idx] += r.amount;
-      });
-      const expCatRows = Object.values(expCatMap);
-      const expGrand = expCatRows.reduce((s, r) => s + r.months.reduce((a, b) => a + b, 0), 0);
-      const expCatTbody = $('#pnlExpCategoryTable tbody');
-      const expMonthTotals = MONTHS.map(() => 0);
-      expCatTbody.innerHTML = expCatRows.length === 0
-        ? '<tr><td colspan="15" style="text-align:center;color:var(--text-light);padding:24px">No data</td></tr>'
-        : expCatRows.filter(r => r.months.some(v => v)).map(r => {
-            const rowTotal = r.months.reduce((s, v) => s + v, 0);
-            r.months.forEach((v, i) => { expMonthTotals[i] += v; });
-            const pct = expGrand > 0 ? ((rowTotal / expGrand) * 100).toFixed(1) + '%' : '—';
-            return `<tr><td><strong>${sanitize(r.name)}</strong></td>${r.months.map(v => `<td>${v ? fmt(v) : '—'}</td>`).join('')}<td><strong>${fmt(rowTotal)}</strong></td><td>${pct}</td></tr>`;
-          }).join('');
-      if (expGrand > 0) {
-        $('#pnlExpCatTotalRow').innerHTML = `<td><strong>TOTAL</strong></td>${expMonthTotals.map(v => `<td><strong>${v ? fmt(v) : '—'}</strong></td>`).join('')}<td><strong>${fmt(expGrand)}</strong></td><td><strong>100%</strong></td>`;
-      } else { $('#pnlExpCatTotalRow').innerHTML = ''; }
-    }
-
-    yearSel.addEventListener('change', draw);
-    draw();
-  }
-
   // ── Dashboard ─────────────────────────────────────
   let dashCharts = [];
+  let lastPnlData = [];
 
   function refreshDashboard() {
     // Destroy old charts
@@ -1600,6 +1353,218 @@
       <td><strong>${totalMg}</strong></td>
       <td class="${cumulative >= 0 ? 'profit' : 'loss'}"><strong>${fmt(cumulative)}</strong></td>`;
 
+    // ── P&L Section (merged) ────────────────────────
+    // Cumulative P&L
+    let pnlCumul = 0;
+    lastPnlData = monthly.map((m, i) => {
+      pnlCumul += m.net;
+      return {
+        month: MONTHS[i], revenue: m.revenue, itemCost: m.itemCost, otherExp: m.otherExp,
+        totalCost: m.totalCost, net: m.net,
+        margin: m.revenue > 0 ? +((m.net / m.revenue) * 100).toFixed(1) : 0,
+        cumulative: pnlCumul
+      };
+    });
+
+    const pnlCols = ['month','revenue','itemCost','otherExp','totalCost','net','margin','cumulative'];
+    let pnlRows = lastPnlData;
+    const ps = sortState['tablePnl'];
+    if (ps) {
+      pnlRows = [...pnlRows].sort((a, b) => {
+        const key = pnlCols[parseInt(ps.col)] || 'month';
+        const va = a[key], vb = b[key];
+        if (typeof va === 'number' && typeof vb === 'number') return ps.dir === 'asc' ? va - vb : vb - va;
+        return ps.dir === 'asc' ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+      });
+    }
+
+    const pnlTotalMargin = totalRevenue > 0 ? ((netProfit / totalRevenue) * 100).toFixed(1) : '—';
+
+    // Active months count
+    const activeMonths = monthly.filter(m => m.revenue > 0 || m.totalCost > 0).length || 1;
+
+    // Best & worst months
+    const monthsWithData = monthly.map((m, i) => ({ ...m, label: MONTHS[i] })).filter(m => m.revenue > 0 || m.totalCost > 0);
+    const bestMonth = monthsWithData.length ? monthsWithData.reduce((a, b) => a.net > b.net ? a : b) : null;
+    const worstMonth = monthsWithData.length ? monthsWithData.reduce((a, b) => a.net < b.net ? a : b) : null;
+
+    // P&L KPI Row 1
+    $('#pnlRevenue').textContent = fmt(totalRevenue);
+    $('#pnlItemCosts').textContent = fmt(totalItemCost);
+    $('#pnlOtherExp').textContent = fmt(totalExpenses);
+    $('#pnlExpenses').textContent = fmt(totalCost);
+    const pnlNetEl = $('#pnlNet');
+    pnlNetEl.textContent = fmt(netProfit);
+    pnlNetEl.className = 'stat-value ' + (netProfit >= 0 ? 'profit' : 'loss');
+    const pnlMgEl = $('#pnlMargin');
+    pnlMgEl.textContent = pnlTotalMargin !== '—' ? pnlTotalMargin + '%' : '—';
+    pnlMgEl.className = 'stat-value ' + (netProfit >= 0 ? 'profit' : 'loss');
+
+    // P&L KPI Row 2
+    $('#pnlCostRatio').textContent = totalRevenue > 0 ? ((totalCost / totalRevenue) * 100).toFixed(1) + '%' : '—';
+    $('#pnlAvgMonthRev').textContent = fmt(totalRevenue / activeMonths);
+    $('#pnlAvgMonthCost').textContent = fmt(totalCost / activeMonths);
+    $('#pnlBestMonth').textContent = bestMonth ? bestMonth.label + ' (' + fmt(bestMonth.net) + ')' : '—';
+    $('#pnlBestMonth').className = 'stat-value profit';
+    $('#pnlWorstMonth').textContent = worstMonth ? worstMonth.label + ' (' + fmt(worstMonth.net) + ')' : '—';
+    $('#pnlWorstMonth').className = 'stat-value loss';
+
+    // P&L Table
+    const pnlTbody = $('#tablePnl tbody');
+    pnlTbody.innerHTML = pnlRows.map(r => {
+      const marginStr = r.margin ? r.margin + '%' : '—';
+      return `<tr>
+        <td>${r.month}</td>
+        <td>${fmt(r.revenue)}</td><td>${fmt(r.itemCost)}</td>
+        <td>${fmt(r.otherExp)}</td><td>${fmt(r.totalCost)}</td>
+        <td class="${r.net >= 0 ? 'profit' : 'loss'}">${fmt(r.net)}</td>
+        <td>${marginStr}</td>
+        <td class="${r.cumulative >= 0 ? 'profit' : 'loss'}">${fmt(r.cumulative)}</td>
+      </tr>`;
+    }).join('');
+
+    const finalCumul = lastPnlData.length ? lastPnlData[lastPnlData.length - 1].cumulative : 0;
+    const pnlTotalRow = $('#pnlTotalRow');
+    pnlTotalRow.innerHTML = `
+      <td><strong>TOTAL</strong></td>
+      <td><strong>${fmt(totalRevenue)}</strong></td><td><strong>${fmt(totalItemCost)}</strong></td>
+      <td><strong>${fmt(totalExpenses)}</strong></td><td><strong>${fmt(totalCost)}</strong></td>
+      <td class="${netProfit >= 0 ? 'profit' : 'loss'}"><strong>${fmt(netProfit)}</strong></td>
+      <td><strong>${pnlTotalMargin !== '—' ? pnlTotalMargin + '%' : '—'}</strong></td>
+      <td class="${finalCumul >= 0 ? 'profit' : 'loss'}"><strong>${fmt(finalCumul)}</strong></td>`;
+
+    // P&L Chart 1: Month-wise P&L bar+line
+    dashCharts.push(new Chart($('#chartPnlDetailed'), {
+      type: 'bar',
+      data: {
+        labels: MONTHS,
+        datasets: [
+          { label: 'Revenue', data: monthly.map(m => m.revenue), backgroundColor: '#22c55e', borderRadius: 6, order: 2 },
+          { label: 'Item Costs', data: monthly.map(m => m.itemCost), backgroundColor: '#ef4444', borderRadius: 6, order: 2 },
+          { label: 'Other Expenses', data: monthly.map(m => m.otherExp), backgroundColor: '#f59e0b', borderRadius: 6, order: 2 },
+          { label: 'Net P&L', data: monthly.map(m => m.net), type: 'line', borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,.1)', fill: true, tension: .4, pointRadius: 5, pointBackgroundColor: '#6366f1', order: 1 }
+        ]
+      },
+      options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + fmt(ctx.raw) } } },
+        scales: { y: { beginAtZero: true, ticks: { callback: v => '₹' + v.toLocaleString('en-IN') } } }
+      }
+    }));
+
+    // P&L Chart 2: Cost composition doughnut
+    dashCharts.push(new Chart($('#chartPnlCostSplit'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Item Costs', 'Other Expenses'],
+        datasets: [{ data: [totalItemCost, totalExpenses], backgroundColor: ['#ef4444', '#f59e0b'], borderWidth: 0, spacing: 4, borderRadius: 6 }]
+      },
+      options: { responsive: true, cutout: '60%', plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: ctx => ctx.label + ': ' + fmt(ctx.raw) } } } }
+    }));
+
+    // P&L Chart 3: Cumulative P&L trend
+    let pnlC = 0;
+    const pnlCumulData = monthly.map(m => { pnlC += m.net; return pnlC; });
+    dashCharts.push(new Chart($('#chartPnlCumulative'), {
+      type: 'line',
+      data: {
+        labels: MONTHS,
+        datasets: [{
+          label: 'Cumulative P&L', data: pnlCumulData,
+          borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,.08)', fill: true,
+          tension: .4, pointRadius: 5, pointBackgroundColor: pnlCumulData.map(v => v >= 0 ? '#22c55e' : '#ef4444')
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => 'Cumulative: ' + fmt(ctx.raw) } } },
+        scales: { y: { ticks: { callback: v => '₹' + v.toLocaleString('en-IN') } } }
+      }
+    }));
+
+    // P&L Chart 4: Margin trend
+    const pnlMargins = monthly.map(m => m.revenue > 0 ? +((m.net / m.revenue) * 100).toFixed(1) : 0);
+    dashCharts.push(new Chart($('#chartPnlMarginTrend'), {
+      type: 'bar',
+      data: {
+        labels: MONTHS,
+        datasets: [{
+          label: 'Margin %', data: pnlMargins,
+          backgroundColor: pnlMargins.map(v => v >= 0 ? '#22c55e' : '#ef4444'),
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.raw + '%' } } },
+        scales: { y: { ticks: { callback: v => v + '%' } } }
+      }
+    }));
+
+    // Revenue Sources
+    const revSrcMap = {};
+    sales.forEach(r => {
+      const idx = fyIndex(r.date);
+      if (idx < 0) return;
+      const k = (r.type || 'Unknown').trim();
+      const lk = k.toLowerCase();
+      if (!revSrcMap[lk]) revSrcMap[lk] = { name: k, months: MONTHS.map(() => 0) };
+      revSrcMap[lk].months[idx] += r.amount;
+    });
+    if (Object.keys(revSrcMap).length === 0) {
+      itemsOut.forEach(r => {
+        const idx = fyIndex(r.date);
+        if (idx < 0) return;
+        const k = (r.category || 'Uncategorized').trim();
+        const lk = k.toLowerCase();
+        if (!revSrcMap[lk]) revSrcMap[lk] = { name: k, months: MONTHS.map(() => 0) };
+        revSrcMap[lk].months[idx] += r.amount;
+      });
+    }
+
+    const revSrcRows = Object.values(revSrcMap);
+    const revGrand = revSrcRows.reduce((s, r) => s + r.months.reduce((a, b) => a + b, 0), 0);
+    const revSrcTbody = $('#pnlRevenueSourcesTable tbody');
+    const revMonthTotals = MONTHS.map(() => 0);
+    revSrcTbody.innerHTML = revSrcRows.length === 0
+      ? '<tr><td colspan="15" style="text-align:center;color:var(--text-light);padding:24px">No data</td></tr>'
+      : revSrcRows.filter(r => r.months.some(v => v)).map(r => {
+          const rowTotal = r.months.reduce((s, v) => s + v, 0);
+          r.months.forEach((v, i) => { revMonthTotals[i] += v; });
+          const pct = revGrand > 0 ? ((rowTotal / revGrand) * 100).toFixed(1) + '%' : '—';
+          return `<tr><td><strong>${sanitize(r.name)}</strong></td>${r.months.map(v => `<td>${v ? fmt(v) : '—'}</td>`).join('')}<td><strong>${fmt(rowTotal)}</strong></td><td>${pct}</td></tr>`;
+        }).join('');
+    if (revGrand > 0) {
+      $('#pnlRevSourceTotalRow').innerHTML = `<td><strong>TOTAL</strong></td>${revMonthTotals.map(v => `<td><strong>${v ? fmt(v) : '—'}</strong></td>`).join('')}<td><strong>${fmt(revGrand)}</strong></td><td><strong>100%</strong></td>`;
+    } else { $('#pnlRevSourceTotalRow').innerHTML = ''; }
+
+    // Expense Category Breakdown
+    const pnlExpCatMap = {};
+    expenses.forEach(r => {
+      const idx = fyIndex(r.date);
+      if (idx < 0) return;
+      const k = (r.category || 'Other').trim();
+      const lk = k.toLowerCase();
+      if (!pnlExpCatMap[lk]) pnlExpCatMap[lk] = { name: k, months: MONTHS.map(() => 0) };
+      pnlExpCatMap[lk].months[idx] += r.amount;
+    });
+    const expCatRows = Object.values(pnlExpCatMap);
+    const expGrand = expCatRows.reduce((s, r) => s + r.months.reduce((a, b) => a + b, 0), 0);
+    const expCatTbody = $('#pnlExpCategoryTable tbody');
+    const expMonthTotals = MONTHS.map(() => 0);
+    expCatTbody.innerHTML = expCatRows.length === 0
+      ? '<tr><td colspan="15" style="text-align:center;color:var(--text-light);padding:24px">No data</td></tr>'
+      : expCatRows.filter(r => r.months.some(v => v)).map(r => {
+          const rowTotal = r.months.reduce((s, v) => s + v, 0);
+          r.months.forEach((v, i) => { expMonthTotals[i] += v; });
+          const pct = expGrand > 0 ? ((rowTotal / expGrand) * 100).toFixed(1) + '%' : '—';
+          return `<tr><td><strong>${sanitize(r.name)}</strong></td>${r.months.map(v => `<td>${v ? fmt(v) : '—'}</td>`).join('')}<td><strong>${fmt(rowTotal)}</strong></td><td>${pct}</td></tr>`;
+        }).join('');
+    if (expGrand > 0) {
+      $('#pnlExpCatTotalRow').innerHTML = `<td><strong>TOTAL</strong></td>${expMonthTotals.map(v => `<td><strong>${v ? fmt(v) : '—'}</strong></td>`).join('')}<td><strong>${fmt(expGrand)}</strong></td><td><strong>100%</strong></td>`;
+    } else { $('#pnlExpCatTotalRow').innerHTML = ''; }
+
     // Recent Transactions
     const recent = [
       ...fyItemsIn.slice(0, 15).map(r => ({ date: r.date, type: 'Purchase', item: r.item, qty: r.qty, amount: -r.cost })),
@@ -1763,7 +1728,7 @@
 
   // ── P&L Export ────────────────────────────────────
   $('#btnExportPnl').addEventListener('click', () => {
-    const fy = $('#pnlYear').value;
+    const fy = $('#dashFY').value;
     exportXlsx(
       lastPnlData.map(r => [r.month, r.revenue, r.itemCost, r.otherExp, r.totalCost, r.net, r.margin ? r.margin + '%' : '—', r.cumulative]),
       ['Month','Revenue','Item Costs','Other Expenses','Total Costs','Net P&L','Margin %','Cumulative'],
@@ -1788,7 +1753,7 @@
   bindSortHeaders('tableInventory', renderInventory);
   bindSortHeaders('tableExpenses', renderExpenses);
   bindSortHeaders('tableSales', renderSales);
-  bindSortHeaders('tablePnl', renderPnl);
+  bindSortHeaders('tablePnl', drawDashboard);
   bindSortHeaders('tableAuthLog', renderAuthLog);
 
 })();
