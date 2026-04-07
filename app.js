@@ -227,6 +227,7 @@
           <td>${sanitize(r.remark || '—')}</td>
           <td><button class="btn-delete" data-id="${sanitize(r.id)}" data-type="in">Delete</button></td>
         </tr>`).join('');
+    renderItemsInSummary();
   }
   let lastFilteredItemsIn = [];
 
@@ -239,6 +240,140 @@
       $('#' + id).value = '';
     });
     renderItemsIn();
+  });
+
+  // ── Items In: Month-wise Summary Tables ───────────
+  function renderItemsInSummary() {
+    const yearSel = $('#itemsInFY');
+    const years = getFYears();
+    const prev = yearSel.value;
+    yearSel.innerHTML = years.map(y => `<option value="${y}">FY ${fyLabel(y)}</option>`).join('');
+    if (prev && years.includes(parseInt(prev))) yearSel.value = prev;
+    drawItemsInSummary();
+  }
+
+  function drawItemsInSummary() {
+    const fyStart = parseInt($('#itemsInFY').value);
+
+    function fyIdx(dateStr) {
+      const d = new Date(dateStr);
+      const m = d.getMonth(), y = d.getFullYear();
+      if (m >= 3) return y === fyStart ? m - 3 : -1;
+      return y === fyStart + 1 ? m + 9 : -1;
+    }
+
+    // Build maps: item→{unit, qty[12], amt[12]}, brand→amt[12], supplier→amt[12]
+    const itemQtyMap = {};
+    const itemAmtMap = {};
+    const brandMap = {};
+    const supplierMap = {};
+
+    itemsIn.forEach(r => {
+      const idx = fyIdx(r.date);
+      if (idx < 0) return;
+      const key = r.item.toLowerCase();
+      const brandKey = (r.brand || 'Unbranded').trim();
+      const suppKey = (r.supplier || 'Unknown').trim();
+
+      // Item Qty
+      if (!itemQtyMap[key]) itemQtyMap[key] = { name: r.item, unit: r.unit, months: MONTHS.map(() => 0) };
+      itemQtyMap[key].months[idx] += r.qty;
+
+      // Item Amt
+      if (!itemAmtMap[key]) itemAmtMap[key] = { name: r.item, months: MONTHS.map(() => 0) };
+      itemAmtMap[key].months[idx] += r.cost;
+
+      // Brand Amt
+      const bk = brandKey.toLowerCase();
+      if (!brandMap[bk]) brandMap[bk] = { name: brandKey, months: MONTHS.map(() => 0) };
+      brandMap[bk].months[idx] += r.cost;
+
+      // Supplier Amt
+      const sk = suppKey.toLowerCase();
+      if (!supplierMap[sk]) supplierMap[sk] = { name: suppKey, months: MONTHS.map(() => 0) };
+      supplierMap[sk].months[idx] += r.cost;
+    });
+
+    lastInSummary = { itemQty: Object.values(itemQtyMap), itemAmt: Object.values(itemAmtMap), brand: Object.values(brandMap), supplier: Object.values(supplierMap) };
+
+    // Helper to render a grouped table
+    function renderGroupTable(tbodyId, rows, valFmt, totalRowId) {
+      const tbody = $('#' + tbodyId + ' tbody');
+      const monthTotals = MONTHS.map(() => 0);
+      let grandTotal = 0;
+      const hasUnit = rows.length > 0 && rows[0].unit !== undefined;
+
+      tbody.innerHTML = rows.length === 0
+        ? `<tr><td colspan="${hasUnit ? 15 : 14}" style="text-align:center;color:var(--text-light);padding:32px">No data for this FY</td></tr>`
+        : rows.filter(r => r.months.some(v => v)).map(r => {
+            const rowTotal = r.months.reduce((s, v) => s + v, 0);
+            r.months.forEach((v, i) => { monthTotals[i] += v; });
+            grandTotal += rowTotal;
+            return `<tr>
+              <td><strong>${sanitize(r.name)}</strong></td>
+              ${hasUnit ? `<td>${sanitize(r.unit)}</td>` : ''}
+              ${r.months.map(v => `<td>${v ? valFmt(v) : '—'}</td>`).join('')}
+              <td><strong>${valFmt(rowTotal)}</strong></td>
+            </tr>`;
+          }).join('');
+
+      if (totalRowId && grandTotal > 0) {
+        $(totalRowId).innerHTML = `
+          <td><strong>TOTAL</strong></td>
+          ${hasUnit ? '<td></td>' : ''}
+          ${monthTotals.map(v => `<td><strong>${v ? valFmt(v) : '—'}</strong></td>`).join('')}
+          <td><strong>${valFmt(grandTotal)}</strong></td>`;
+      } else if (totalRowId) {
+        $(totalRowId).innerHTML = '';
+      }
+    }
+
+    const fmtQty = v => v % 1 === 0 ? String(v) : v.toFixed(2);
+
+    renderGroupTable('tableInQtyMonthly', Object.values(itemQtyMap), fmtQty, null);
+    renderGroupTable('tableInAmtMonthly', Object.values(itemAmtMap), fmt, '#inAmtTotalRow');
+    renderGroupTable('tableInBrandMonthly', Object.values(brandMap), fmt, '#inBrandTotalRow');
+    renderGroupTable('tableInSupplierMonthly', Object.values(supplierMap), fmt, '#inSupplierTotalRow');
+  }
+  let lastInSummary = { itemQty: [], itemAmt: [], brand: [], supplier: [] };
+
+  $('#itemsInFY').addEventListener('change', drawItemsInSummary);
+
+  $('#btnExportItemsInSummary').addEventListener('click', () => {
+    const s = lastInSummary;
+    const fy = $('#itemsInFY').value;
+    const rows = [];
+    // Sheet 1 data: all 4 tables in one sheet separated by headers
+    rows.push(['Quantity of Items Purchased — Month-wise']);
+    rows.push(['Item', 'Unit', ...MONTHS, 'Total']);
+    s.itemQty.filter(r => r.months.some(v => v)).forEach(r => {
+      rows.push([r.name, r.unit, ...r.months, r.months.reduce((a, b) => a + b, 0)]);
+    });
+    rows.push([]);
+    rows.push(['Amount of Items Purchased — Month-wise']);
+    rows.push(['Item', ...MONTHS, 'Total']);
+    s.itemAmt.filter(r => r.months.some(v => v)).forEach(r => {
+      rows.push([r.name, ...r.months, r.months.reduce((a, b) => a + b, 0)]);
+    });
+    rows.push([]);
+    rows.push(['Amount Purchased from Brands — Month-wise']);
+    rows.push(['Brand', ...MONTHS, 'Total']);
+    s.brand.filter(r => r.months.some(v => v)).forEach(r => {
+      rows.push([r.name, ...r.months, r.months.reduce((a, b) => a + b, 0)]);
+    });
+    rows.push([]);
+    rows.push(['Amount Purchased from Suppliers — Month-wise']);
+    rows.push(['Supplier', ...MONTHS, 'Total']);
+    s.supplier.filter(r => r.months.some(v => v)).forEach(r => {
+      rows.push([r.name, ...r.months, r.months.reduce((a, b) => a + b, 0)]);
+    });
+
+    if (rows.length <= 8) return toast('No data to export', true);
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Purchase Summaries');
+    XLSX.writeFile(wb, 'canteen_purchase_summaries_FY' + fyLabel(fy) + '_' + today() + '.xlsx');
+    toast('Exported to .xlsx');
   });
 
   // ── Items Out ─────────────────────────────────────
