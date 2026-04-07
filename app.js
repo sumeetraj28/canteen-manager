@@ -209,8 +209,9 @@
       ? '<tr><td colspan="11" style="text-align:center;color:var(--text-light);padding:32px">No purchase records yet</td></tr>'
       : filtered.map(r => `<tr>
           <td>${sanitize(r.date)}</td><td>${sanitize(r.billNo || '—')}</td><td>${sanitize(r.item)}</td>
-          <td>${sanitize(r.brand || '—')}</td><td>${r.qty}</td><td>${sanitize(r.unit)}</td>
-          <td>${fmt(r.rate || 0)}</td><td>${fmt(r.cost)}</td><td>${sanitize(r.supplier || '—')}</td>
+          <td>${sanitize(r.brand || '—')}</td><td>${sanitize(r.supplier || '—')}</td>
+          <td>${r.qty}</td><td>${sanitize(r.unit)}</td>
+          <td>${fmt(r.rate || 0)}</td><td>${fmt(r.cost)}</td>
           <td>${sanitize(r.remark || '—')}</td>
           <td><button class="btn-delete" data-id="${sanitize(r.id)}" data-type="in">Delete</button></td>
         </tr>`).join('');
@@ -546,8 +547,8 @@
 
   $('#btnExportItemsIn').addEventListener('click', () => {
     exportXlsx(
-      lastFilteredItemsIn.map(r => [r.date, r.billNo || '', r.item, r.brand || '', r.qty, r.unit, r.rate || 0, r.cost, r.supplier || '', r.remark || '']),
-      ['Date','Bill No','Item','Brand','Qty','Unit','Rate','Cost','Supplier','Remark'],
+      lastFilteredItemsIn.map(r => [r.date, r.billNo || '', r.item, r.brand || '', r.supplier || '', r.qty, r.unit, r.rate || 0, r.cost, r.remark || '']),
+      ['Date','Bill No','Item','Brand','Supplier','Qty','Unit','Rate','Cost','Remark'],
       'canteen_items_in'
     );
   });
