@@ -608,6 +608,18 @@
       <!-- ==================== CHANGELOG ==================== -->
       <section class="page" id="page-changelog">
         <div class="table-card">
+          <div class="table-header">
+            <h3>User Activity Log</h3>
+            <button class="btn-secondary btn-sm" id="btnExportAuthLog">Export .xlsx</button>
+          </div>
+          <div class="table-wrapper">
+            <table id="tableAuthLog">
+              <thead><tr><th class="sortable" data-col="timestamp">Date &amp; Time <span class="sort-icon"></span></th><th class="sortable" data-col="email">User <span class="sort-icon"></span></th><th class="sortable" data-col="action">Action <span class="sort-icon"></span></th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="table-card">
           <h3>Changelog &mdash; Version History</h3>
           <div class="changelog-list">
             <div class="changelog-entry">

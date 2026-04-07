@@ -82,6 +82,7 @@
   const colItemsOut = db.collection('itemsOut');
   const colExpenses = db.collection('expenses');
   const colSales    = db.collection('sales');
+  const colAuthLogs  = db.collection('authLogs');
 
   // ── Toast ─────────────────────────────────────────
   function toast(msg, isError) {
@@ -108,6 +109,7 @@
     if (page === 'expenses')  renderExpenses();
     if (page === 'sales')     renderSales();
     if (page === 'pnl')       renderPnl();
+    if (page === 'changelog') renderAuthLog();
     $('#sidebar').classList.remove('open');
   }
 
@@ -149,6 +151,7 @@
     if (activePage === 'expenses')  renderExpenses();
     if (activePage === 'sales')     renderSales();
     if (activePage === 'pnl')       renderPnl();
+    if (activePage === 'changelog') renderAuthLog();
   }
 
   // ── Items In ──────────────────────────────────────
@@ -923,6 +926,7 @@
 
     auth.signInWithEmailAndPassword(email, password)
       .then((cred) => {
+        logAuthEvent(cred.user.email, 'Login');
         showApp(cred.user);
       })
       .catch((err) => {
@@ -940,11 +944,67 @@
 
   // Logout
   $('#logoutBtn').addEventListener('click', () => {
-    auth.signOut().then(() => {
-      itemsIn = []; itemsOut = []; expenses = []; sales = [];
-      showLogin();
-      toast('Logged out');
+    const email = auth.currentUser?.email;
+    logAuthEvent(email, 'Logout').finally(() => {
+      auth.signOut().then(() => {
+        itemsIn = []; itemsOut = []; expenses = []; sales = [];
+        showLogin();
+        toast('Logged out');
+      });
     });
+  });
+
+  // ── Auth Activity Log ─────────────────────────────
+  let authLogs = [];
+
+  function logAuthEvent(email, action) {
+    return colAuthLogs.add({
+      email: email || 'unknown',
+      action: action,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(() => {});
+  }
+
+  colAuthLogs.orderBy('timestamp', 'desc').onSnapshot((snap) => {
+    authLogs = snap.docs.map(d => {
+      const data = d.data();
+      return { id: d.id, ...data, ts: data.timestamp ? data.timestamp.toDate() : new Date() };
+    });
+    const activePage = document.querySelector('.nav-item.active')?.dataset.page;
+    if (activePage === 'changelog') renderAuthLog();
+  });
+
+  function renderAuthLog() {
+    const tbody = $('#tableAuthLog tbody');
+    let list = applySort(authLogs, 'tableAuthLog', (r, col) => {
+      if (col === 'timestamp') return r.ts.getTime();
+      return r[col] || '';
+    });
+    lastFilteredAuthLog = list;
+    tbody.innerHTML = list.length === 0
+      ? '<tr><td colspan="3" style="text-align:center;color:var(--text-light);padding:32px">No activity recorded yet</td></tr>'
+      : list.map(r => {
+          const dt = r.ts.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })
+                   + ' ' + r.ts.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit', hour12:true });
+          const cls = r.action === 'Login' ? 'status-ok' : 'status-out';
+          return `<tr>
+            <td>${sanitize(dt)}</td>
+            <td>${sanitize(r.email)}</td>
+            <td><span class="status-badge ${cls}">${sanitize(r.action)}</span></td>
+          </tr>`;
+        }).join('');
+  }
+  let lastFilteredAuthLog = [];
+
+  $('#btnExportAuthLog').addEventListener('click', () => {
+    exportXlsx(
+      lastFilteredAuthLog.map(r => {
+        const dt = r.ts.toLocaleDateString('en-IN') + ' ' + r.ts.toLocaleTimeString('en-IN');
+        return [dt, r.email, r.action];
+      }),
+      ['Date & Time','User','Action'],
+      'canteen_auth_log'
+    );
   });
 
   // ── P&L Export ────────────────────────────────────
@@ -975,5 +1035,6 @@
   bindSortHeaders('tableExpenses', renderExpenses);
   bindSortHeaders('tableSales', renderSales);
   bindSortHeaders('tablePnl', renderPnl);
+  bindSortHeaders('tableAuthLog', renderAuthLog);
 
 })();
