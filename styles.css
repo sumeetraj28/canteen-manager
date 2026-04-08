@@ -136,14 +136,14 @@ input[type="text"],input[type="number"],input[type="date"],select{
   padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);
   background:var(--bg);color:var(--text);font-size:.9rem;transition:border-color .2s;
 }
-input:focus,select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,.12)}
+input:focus,select:focus{outline:2px solid transparent;border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,.12)}
 input[readonly]{background:#e9ecef;cursor:default}
 .search-input{padding:8px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);min-width:220px}
 
 /* ── Filter Row ──────────────────────────────────── */
 .filter-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;align-items:center}
 .filter-input{padding:7px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);font-size:.82rem;min-width:0;width:140px}
-.filter-input:focus{border-color:var(--primary);outline:none}
+.filter-input:focus{border-color:var(--primary);outline:2px solid transparent}
 .btn-sm{padding:6px 14px;font-size:.78rem}
 
 /* ── Buttons ─────────────────────────────────────── */
@@ -228,7 +228,7 @@ input[readonly]{background:#e9ecef;cursor:default}
 .login-field{margin-bottom:16px;display:flex;flex-direction:column;gap:6px}
 .login-field label{font-size:.78rem;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.3px}
 .login-field input{padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.92rem;background:var(--bg);transition:border-color .2s}
-.login-field input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,.12)}
+.login-field input:focus{outline:2px solid transparent;border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,.12)}
 .login-error{color:var(--red);font-size:.82rem;min-height:20px;margin-bottom:8px;text-align:center}
 .btn-login{
   width:100%;padding:13px;background:var(--primary);color:#fff;border:none;
@@ -458,3 +458,7 @@ h4.collapsible-toggle.collapsed::after{
 .date-wrap input[type="date"]::-webkit-calendar-picker-indicator{opacity:1;cursor:pointer}
 .date-display{position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none;font-size:inherit;color:var(--text);white-space:nowrap}
 .date-display:empty::after{content:attr(data-placeholder);color:var(--text-light);opacity:.6}
+
+/* ── Accessibility ────────────────────────────────── */
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+@media print{.sidebar,.login-screen,.toast,button,.chart-card{display:none!important}.main{margin:0;padding:0}table{font-size:10pt}}

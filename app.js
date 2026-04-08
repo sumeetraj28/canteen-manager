@@ -8,7 +8,7 @@
   const MONTHS = ['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'];
 
   function fmt(n) { return '₹' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 }); }
-  function fmtDate(d) { if (!d) return ''; const [y, m, dd] = d.split('-'); return dd + '/' + m + '/' + y; }
+  function fmtDate(d) { if (!d) return ''; const p = d.split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : sanitize(d); }
   function today() { return new Date().toISOString().slice(0, 10); }
   function sanitize(str) {
     const div = document.createElement('div');
@@ -160,29 +160,43 @@
   ['#inDate','#outDate','#expDate','#saleDate'].forEach(id => $(id).value = today());
 
   // ── Real-time Firestore listeners ─────────────────
+  let unsubs = [];
+  let refreshTimer;
+  function refreshActivePage() {
+    clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(doRefreshActivePage, 60);
+  }
   function startListeners() {
-    colItemsIn.orderBy('createdAt', 'desc').onSnapshot((snap) => {
-      itemsIn = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      refreshActivePage();
-    });
-
-    colItemsOut.orderBy('createdAt', 'desc').onSnapshot((snap) => {
-      itemsOut = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      refreshActivePage();
-    });
-
-    colExpenses.orderBy('createdAt', 'desc').onSnapshot((snap) => {
-      expenses = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      refreshActivePage();
-    });
-
-    colSales.orderBy('createdAt', 'desc').onSnapshot((snap) => {
-      sales = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      refreshActivePage();
-    });
+    unsubs.forEach(fn => fn());
+    unsubs = [
+      colItemsIn.orderBy('createdAt', 'desc').onSnapshot((snap) => {
+        itemsIn = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        refreshActivePage();
+      }),
+      colItemsOut.orderBy('createdAt', 'desc').onSnapshot((snap) => {
+        itemsOut = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        refreshActivePage();
+      }),
+      colExpenses.orderBy('createdAt', 'desc').onSnapshot((snap) => {
+        expenses = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        refreshActivePage();
+      }),
+      colSales.orderBy('createdAt', 'desc').onSnapshot((snap) => {
+        sales = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        refreshActivePage();
+      }),
+      colAuthLogs.orderBy('timestamp', 'desc').onSnapshot((snap) => {
+        authLogs = snap.docs.map(d => {
+          const data = d.data();
+          return { id: d.id, ...data, ts: data.timestamp ? data.timestamp.toDate() : new Date() };
+        });
+        const activePage = document.querySelector('.nav-item.active')?.dataset.page;
+        if (activePage === 'changelog') renderAuthLog();
+      }, (err) => console.error('AuthLogs listener error:', err))
+    ];
   }
 
-  function refreshActivePage() {
+  function doRefreshActivePage() {
     const activePage = document.querySelector('.nav-item.active')?.dataset.page;
     if (activePage === 'dashboard') refreshDashboard();
     if (activePage === 'items-in')  renderItemsIn();
@@ -329,10 +343,10 @@
     tbody.innerHTML = filtered.length === 0
       ? '<tr><td colspan="11" style="text-align:center;color:var(--text-light);padding:32px">No purchase records yet</td></tr>'
       : filtered.map(r => `<tr>
-          <td>${fmtDate(r.date)}</td><td>${sanitize(r.billNo || '—')}</td><td>${sanitize(r.item)}</td>
+          <td>${sanitize(fmtDate(r.date))}</td><td>${sanitize(r.billNo || '—')}</td><td>${sanitize(r.item)}</td>
           <td>${sanitize(r.brand || '—')}</td><td>${sanitize(r.supplier || '—')}</td>
-          <td>${r.qty}</td><td>${sanitize(r.unit)}</td>
-          <td>${fmt(r.rate || 0)}</td><td>${fmt(r.cost)}</td>
+          <td>${Number(r.qty)}</td><td>${sanitize(r.unit)}</td>
+          <td>${fmt(r.rate || 0)}</td><td>${fmt(r.cost || 0)}</td>
           <td>${sanitize(r.remark || '—')}</td>
           <td><button class="btn-edit" data-id="${sanitize(r.id)}" data-type="in">Edit</button> <button class="btn-delete" data-id="${sanitize(r.id)}" data-type="in">Delete</button></td>
         </tr>`).join('');
@@ -557,9 +571,9 @@
     tbody.innerHTML = filtered.length === 0
       ? '<tr><td colspan="12" style="text-align:center;color:var(--text-light);padding:32px">No sales records yet</td></tr>'
       : filtered.map(r => `<tr>
-          <td>${fmtDate(r.date)}</td><td>${sanitize(r.item)}</td>
+          <td>${sanitize(fmtDate(r.date))}</td><td>${sanitize(r.item)}</td>
           <td>${sanitize(r.brand || '—')}</td><td>${sanitize(r.supplier || '—')}</td>
-          <td>${r.qty}</td><td>${sanitize(r.unit)}</td>
+          <td>${Number(r.qty)}</td><td>${sanitize(r.unit)}</td>
           <td>${fmt(r.rate || 0)}</td><td>${fmt(r.amount)}</td>
           <td>${sanitize(r.category || '—')}</td><td>${sanitize(r.person || '—')}</td>
           <td>${sanitize(r.customer || '—')}</td>
@@ -815,7 +829,7 @@
     tbody.innerHTML = filtered.length === 0
       ? '<tr><td colspan="5" style="text-align:center;color:var(--text-light);padding:32px">No expenses recorded yet</td></tr>'
       : filtered.map(r => `<tr>
-          <td>${fmtDate(r.date)}</td><td>${sanitize(r.category)}</td><td>${fmt(r.amount)}</td>
+          <td>${sanitize(fmtDate(r.date))}</td><td>${sanitize(r.category)}</td><td>${fmt(r.amount)}</td>
           <td>${sanitize(r.note || '—')}</td>
           <td><button class="btn-edit" data-id="${sanitize(r.id)}" data-type="exp">Edit</button> <button class="btn-delete" data-id="${sanitize(r.id)}" data-type="exp">Delete</button></td>
         </tr>`).join('');
@@ -1099,7 +1113,7 @@
     tbody.innerHTML = filtered.length === 0
       ? '<tr><td colspan="5" style="text-align:center;color:var(--text-light);padding:32px">No sales recorded yet</td></tr>'
       : filtered.map(r => `<tr>
-          <td>${fmtDate(r.date)}</td><td>${sanitize(r.type)}</td><td>${fmt(r.amount)}</td>
+          <td>${sanitize(fmtDate(r.date))}</td><td>${sanitize(r.type)}</td><td>${fmt(r.amount)}</td>
           <td>${sanitize(r.details || '—')}</td>
           <td><button class="btn-edit" data-id="${sanitize(r.id)}" data-type="sale">Edit</button> <button class="btn-delete" data-id="${sanitize(r.id)}" data-type="sale">Delete</button></td>
         </tr>`).join('');
@@ -1238,11 +1252,11 @@
 
   function getFYears() {
     const fys = new Set();
-    [...itemsIn, ...itemsOut, ...expenses].forEach(r => {
-      const d = new Date(r.date);
-      const m = d.getMonth();
-      // If Jan-Mar, FY started previous year; if Apr-Dec, FY started same year
-      fys.add(m >= 3 ? d.getFullYear() : d.getFullYear() - 1);
+    [...itemsIn, ...itemsOut, ...expenses, ...sales].forEach(r => {
+      if (!r.date) return;
+      const parts = r.date.split('-');
+      const y = +parts[0], m = +parts[1];
+      fys.add(m >= 4 ? y : y - 1);
     });
     if (fys.size === 0) {
       const now = new Date();
@@ -1705,9 +1719,9 @@
     $('#recentTransactions tbody').innerHTML = recent.length === 0
       ? '<tr><td colspan="5" style="text-align:center;color:var(--text-light);padding:32px">No transactions yet</td></tr>'
       : recent.map(r => `<tr>
-          <td>${fmtDate(r.date)}</td>
+          <td>${sanitize(fmtDate(r.date))}</td>
           <td><span class="status-badge ${r.type === 'Sale' ? 'status-ok' : r.type === 'Purchase' ? 'status-low' : 'status-out'}">${r.type}</span></td>
-          <td>${sanitize(r.item)}</td><td>${r.qty}</td>
+          <td>${sanitize(r.item)}</td><td>${Number(r.qty)}</td>
           <td class="${r.amount >= 0 ? 'profit' : 'loss'}">${fmt(Math.abs(r.amount))}</td>
         </tr>`).join('');
   }
@@ -1885,7 +1899,7 @@
     const purchQtyGrand = purchRows.reduce((s, r) => s + r.qty, 0);
     $('#rptPurchaseTable tbody').innerHTML = purchRows.length === 0
       ? '<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:24px">No purchases</td></tr>'
-      : purchRows.map(r => `<tr><td>${sanitize(r.name)}</td><td>${sanitize(r.brand)}</td><td>${sanitize(r.supplier)}</td><td>${r.qty % 1 === 0 ? r.qty : r.qty.toFixed(2)}</td><td>${r.unit}</td><td>${fmt(r.cost)}</td><td>${r.qty > 0 ? fmt(r.cost / r.qty) : '—'}</td></tr>`).join('');
+      : purchRows.map(r => `<tr><td>${sanitize(r.name)}</td><td>${sanitize(r.brand)}</td><td>${sanitize(r.supplier)}</td><td>${r.qty % 1 === 0 ? r.qty : r.qty.toFixed(2)}</td><td>${sanitize(r.unit)}</td><td>${fmt(r.cost)}</td><td>${r.qty > 0 ? fmt(r.cost / r.qty) : '—'}</td></tr>`).join('');
     $('#rptPurchaseTotalRow').innerHTML = purchRows.length
       ? `<td><strong>TOTAL</strong></td><td></td><td></td><td><strong>${purchQtyGrand % 1 === 0 ? purchQtyGrand : purchQtyGrand.toFixed(2)}</strong></td><td></td><td><strong>${fmt(purchGrand)}</strong></td><td></td>` : '';
 
@@ -1923,7 +1937,7 @@
     const saleQtyGrand = saleRows.reduce((s, r) => s + r.qty, 0);
     $('#rptSalesTable tbody').innerHTML = saleRows.length === 0
       ? '<tr><td colspan="6" style="text-align:center;color:var(--text-light);padding:24px">No sales</td></tr>'
-      : saleRows.map(r => `<tr><td>${sanitize(r.name)}</td><td>${sanitize(r.category)}</td><td>${r.qty % 1 === 0 ? r.qty : r.qty.toFixed(2)}</td><td>${r.unit}</td><td>${fmt(r.amount)}</td><td>${r.qty > 0 ? fmt(r.amount / r.qty) : '—'}</td></tr>`).join('');
+      : saleRows.map(r => `<tr><td>${sanitize(r.name)}</td><td>${sanitize(r.category)}</td><td>${r.qty % 1 === 0 ? r.qty : r.qty.toFixed(2)}</td><td>${sanitize(r.unit)}</td><td>${fmt(r.amount)}</td><td>${r.qty > 0 ? fmt(r.amount / r.qty) : '—'}</td></tr>`).join('');
     $('#rptSalesTotalRow').innerHTML = saleGrand > 0
       ? `<td><strong>TOTAL</strong></td><td></td><td><strong>${saleQtyGrand % 1 === 0 ? saleQtyGrand : saleQtyGrand.toFixed(2)}</strong></td><td></td><td><strong>${fmt(saleGrand)}</strong></td><td></td>` : '';
 
@@ -2004,7 +2018,7 @@
     const dayTotals = dayRows.reduce((t, r) => ({ revenue: t.revenue + r.revenue, purchases: t.purchases + r.purchases, expenses: t.expenses + r.expenses, totalCost: t.totalCost + r.totalCost, net: t.net + r.net }), { revenue: 0, purchases: 0, expenses: 0, totalCost: 0, net: 0 });
     $('#rptDailyTable tbody').innerHTML = dayRows.length === 0
       ? '<tr><td colspan="6" style="text-align:center;color:var(--text-light);padding:24px">No data</td></tr>'
-      : dayRows.map(r => `<tr><td>${fmtDate(r.date)}</td><td>${fmt(r.revenue)}</td><td>${fmt(r.purchases)}</td><td>${fmt(r.expenses)}</td><td>${fmt(r.totalCost)}</td><td class="${r.net >= 0 ? 'profit' : 'loss'}">${fmt(r.net)}</td></tr>`).join('');
+      : dayRows.map(r => `<tr><td>${sanitize(fmtDate(r.date))}</td><td>${fmt(r.revenue)}</td><td>${fmt(r.purchases)}</td><td>${fmt(r.expenses)}</td><td>${fmt(r.totalCost)}</td><td class="${r.net >= 0 ? 'profit' : 'loss'}">${fmt(r.net)}</td></tr>`).join('');
     $('#rptDailyTotalRow').innerHTML = dayRows.length
       ? `<td><strong>TOTAL</strong></td><td><strong>${fmt(dayTotals.revenue)}</strong></td><td><strong>${fmt(dayTotals.purchases)}</strong></td><td><strong>${fmt(dayTotals.expenses)}</strong></td><td><strong>${fmt(dayTotals.totalCost)}</strong></td><td class="${dayTotals.net >= 0 ? 'profit' : 'loss'}"><strong>${fmt(dayTotals.net)}</strong></td>` : '';
 
@@ -2283,17 +2297,8 @@
       email: email || 'unknown',
       action: action,
       timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    }).catch(() => {});
+    }).catch((err) => console.error('logAuthEvent error:', err));
   }
-
-  colAuthLogs.orderBy('timestamp', 'desc').onSnapshot((snap) => {
-    authLogs = snap.docs.map(d => {
-      const data = d.data();
-      return { id: d.id, ...data, ts: data.timestamp ? data.timestamp.toDate() : new Date() };
-    });
-    const activePage = document.querySelector('.nav-item.active')?.dataset.page;
-    if (activePage === 'changelog') renderAuthLog();
-  });
 
   function classifyAction(action) {
     if (action === 'Login' || action === 'Logout') return 'login';
