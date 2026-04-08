@@ -70,6 +70,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
         <span>Sales</span>
       </a>
+      <a href="#" class="nav-item" data-page="bill-generator">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h8M8 17h8M8 9h2"/></svg>
+        <span>Bill Generator</span>
+      </a>
       <a href="#" class="nav-item" data-page="reports">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
         <span>Reports</span>
@@ -824,6 +828,170 @@
             </table>
           </div>
         </div>
+      </section>
+
+      <!-- ==================== BILL GENERATOR ==================== -->
+      <section class="page" id="page-bill-generator">
+
+        <!-- Bill Type Selector -->
+        <div class="form-card">
+          <h3>Generate Bill</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="billType">Bill Type</label>
+              <select id="billType">
+                <option value="customer">Customer Bill</option>
+                <option value="expense">General Expense Bill</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Customer Bill Form ── -->
+        <div id="billCustomerForm" class="form-card">
+          <h3>Customer Bill</h3>
+          <form id="formCustomerBill">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="cbDate">Date</label>
+                <input type="date" id="cbDate" required />
+              </div>
+              <div class="form-group">
+                <label for="cbBillNo">Bill No.</label>
+                <input type="text" id="cbBillNo" placeholder="e.g. CB-001" />
+              </div>
+              <div class="form-group">
+                <label for="cbCustomer">Customer Name</label>
+                <input type="text" id="cbCustomer" placeholder="Customer / Department name" required />
+              </div>
+              <div class="form-group">
+                <label for="cbPhone">Phone (optional)</label>
+                <input type="tel" id="cbPhone" placeholder="Phone number" />
+              </div>
+            </div>
+
+            <h4 style="margin:18px 0 8px">Line Items</h4>
+            <div id="cbItems">
+              <div class="bill-item-row">
+                <input type="text" placeholder="Item name" class="cb-item-name" required />
+                <input type="number" placeholder="Qty" class="cb-item-qty" min="1" step="1" value="1" required />
+                <input type="number" placeholder="Rate (₹)" class="cb-item-rate" min="0" step="0.01" required />
+                <input type="text" placeholder="Amount" class="cb-item-amt" readonly tabindex="-1" />
+                <button type="button" class="btn-sm btn-danger cb-remove-row" title="Remove">&times;</button>
+              </div>
+            </div>
+            <button type="button" class="btn-secondary btn-sm" id="cbAddRow" style="margin-top:8px">+ Add Item</button>
+
+            <div class="form-grid" style="margin-top:16px">
+              <div class="form-group">
+                <label>Subtotal</label>
+                <input type="text" id="cbSubtotal" readonly tabindex="-1" value="₹0" />
+              </div>
+              <div class="form-group">
+                <label for="cbDiscount">Discount (₹)</label>
+                <input type="number" id="cbDiscount" min="0" step="0.01" value="0" />
+              </div>
+              <div class="form-group">
+                <label>Grand Total</label>
+                <input type="text" id="cbGrandTotal" readonly tabindex="-1" value="₹0" style="font-weight:700;font-size:1.1em" />
+              </div>
+            </div>
+
+            <div class="form-group full-span" style="margin-top:8px">
+              <label for="cbNotes">Notes / Remarks</label>
+              <input type="text" id="cbNotes" placeholder="Any additional remarks" />
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:16px">
+              <button type="button" class="btn-primary" id="cbPreview">👁 Preview Bill</button>
+              <button type="button" class="btn-secondary" id="cbDownloadPdf">⬇ Download PDF</button>
+              <button type="button" class="btn-secondary" id="cbPrint">🖨 Print</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- ── General Expense Bill Form ── -->
+        <div id="billExpenseForm" class="form-card" style="display:none">
+          <h3>General Expense Bill</h3>
+          <form id="formExpenseBill">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="ebDate">Date</label>
+                <input type="date" id="ebDate" required />
+              </div>
+              <div class="form-group">
+                <label for="ebBillNo">Bill / Voucher No.</label>
+                <input type="text" id="ebBillNo" placeholder="e.g. EXP-001" />
+              </div>
+              <div class="form-group">
+                <label for="ebPaidTo">Paid To</label>
+                <input type="text" id="ebPaidTo" placeholder="Vendor / Person name" required />
+              </div>
+              <div class="form-group">
+                <label for="ebCategory">Category</label>
+                <select id="ebCategory">
+                  <option value="Salary">Salary / Wages</option>
+                  <option value="Rent">Rent</option>
+                  <option value="Electricity">Electricity</option>
+                  <option value="Gas">Gas / Fuel</option>
+                  <option value="Water">Water</option>
+                  <option value="Maintenance">Maintenance</option>
+                  <option value="Equipment">Equipment</option>
+                  <option value="Transport">Transport</option>
+                  <option value="Supplies">Supplies</option>
+                  <option value="Miscellaneous">Miscellaneous</option>
+                </select>
+              </div>
+            </div>
+
+            <h4 style="margin:18px 0 8px">Expense Items</h4>
+            <div id="ebItems">
+              <div class="bill-item-row">
+                <input type="text" placeholder="Description" class="eb-item-desc" required />
+                <input type="number" placeholder="Amount (₹)" class="eb-item-amt" min="0" step="0.01" required />
+                <button type="button" class="btn-sm btn-danger eb-remove-row" title="Remove">&times;</button>
+              </div>
+            </div>
+            <button type="button" class="btn-secondary btn-sm" id="ebAddRow" style="margin-top:8px">+ Add Item</button>
+
+            <div class="form-grid" style="margin-top:16px">
+              <div class="form-group">
+                <label>Total Amount</label>
+                <input type="text" id="ebTotal" readonly tabindex="-1" value="₹0" style="font-weight:700;font-size:1.1em" />
+              </div>
+              <div class="form-group">
+                <label for="ebPaymentMode">Payment Mode</label>
+                <select id="ebPaymentMode">
+                  <option value="Cash">Cash</option>
+                  <option value="UPI">UPI</option>
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="Cheque">Cheque</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group full-span" style="margin-top:8px">
+              <label for="ebNotes">Notes / Remarks</label>
+              <input type="text" id="ebNotes" placeholder="Any additional remarks" />
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:16px">
+              <button type="button" class="btn-primary" id="ebPreview">👁 Preview Bill</button>
+              <button type="button" class="btn-secondary" id="ebDownloadPdf">⬇ Download PDF</button>
+              <button type="button" class="btn-secondary" id="ebPrint">🖨 Print</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- ── Bill Preview Area ── -->
+        <div class="table-card" id="billPreviewCard" style="display:none">
+          <div class="table-header">
+            <h3>Bill Preview</h3>
+          </div>
+          <div id="billPreviewArea"></div>
+        </div>
+
       </section>
 
       <!-- ==================== REPORTS ==================== -->

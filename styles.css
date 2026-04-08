@@ -450,6 +450,32 @@ h4.collapsible-toggle.collapsed::after{
 #btnEraseConfirm:hover{background:#b91c1c!important}
 #btnEraseConfirm:disabled{opacity:.5;cursor:not-allowed}
 
+/* ── Bill Generator ───────────────────────────────── */
+.bill-item-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+.bill-item-row input[type="text"]{flex:2;min-width:120px}
+.bill-item-row input[type="number"]{flex:1;min-width:80px}
+.bill-item-row input[readonly]{background:var(--card-bg);border-color:var(--border);color:var(--text-light);flex:1;min-width:90px}
+.bill-item-row .btn-danger{background:#ef4444;color:#fff;border:none;border-radius:6px;width:32px;height:32px;cursor:pointer;font-size:16px;line-height:1;flex-shrink:0}
+.bill-item-row .btn-danger:hover{background:#dc2626}
+
+/* Bill Preview / Print */
+.bill-print{max-width:720px;margin:0 auto;padding:24px;font-family:Arial,sans-serif;color:#1e293b}
+.bill-header{text-align:center;margin-bottom:8px}
+.bill-header h2{margin:0;font-size:22px;color:#1e293b}
+.bill-header p{margin:2px 0;font-size:13px;color:#64748b}
+.bill-title{text-align:center;margin:12px 0;font-size:16px;letter-spacing:2px;border-top:2px solid #1e293b;border-bottom:2px solid #1e293b;padding:6px 0}
+.bill-meta{display:grid;grid-template-columns:1fr 1fr;gap:4px 24px;font-size:14px;margin-bottom:16px}
+.bill-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
+.bill-table th,.bill-table td{border:1px solid #cbd5e1;padding:8px 10px;text-align:left}
+.bill-table th{background:#f1f5f9;font-weight:600}
+.bill-totals{text-align:right;margin:12px 0;font-size:14px}
+.bill-total-row{display:flex;justify-content:flex-end;gap:32px;padding:4px 10px}
+.bill-grand-total{font-weight:700;font-size:16px;border-top:2px solid #1e293b;margin-top:4px;padding-top:8px}
+.bill-notes{font-size:13px;color:#475569;margin:12px 0;padding:8px;background:#f8fafc;border-radius:4px}
+.bill-footer{margin-top:40px;font-size:13px;color:#64748b;text-align:center}
+.bill-sig{margin-top:48px;border-top:1px solid #94a3b8;padding-top:4px;display:inline-block;min-width:180px}
+.bill-sig-row{display:flex;justify-content:space-between}
+
 /* ── Date input DD/MM/YYYY overlay ────────────────── */
 .date-wrap{position:relative;display:inline-flex}
 .form-group .date-wrap{width:100%}

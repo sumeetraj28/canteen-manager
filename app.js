@@ -97,7 +97,7 @@
   // ── Navigation ────────────────────────────────────
   const navItems = $$('.nav-item');
   const pages = $$('.page');
-  const titles = { dashboard:'Dashboard', 'items-in':'Items In', 'items-out':'Items Out', inventory:'Inventory', expenses:'Other Expenses', sales:'Sales', reports:'Reports', changelog:'Changelog' };
+  const titles = { dashboard:'Dashboard', 'items-in':'Items In', 'items-out':'Items Out', inventory:'Inventory', expenses:'Other Expenses', sales:'Sales', 'bill-generator':'Bill Generator', reports:'Reports', changelog:'Changelog' };
 
   function navigate(page) {
     navItems.forEach(n => n.classList.toggle('active', n.dataset.page === page));
@@ -109,6 +109,7 @@
     if (page === 'inventory') renderInventory();
     if (page === 'expenses')  renderExpenses();
     if (page === 'sales')     renderSales();
+    if (page === 'bill-generator') renderBillGenerator();
     if (page === 'reports')   renderReport();
     if (page === 'changelog') renderAuthLog();
     $('#sidebar').classList.remove('open');
@@ -157,7 +158,7 @@
     inp.addEventListener('change', upd);
   });
 
-  ['#inDate','#outDate','#expDate','#saleDate'].forEach(id => $(id).value = today());
+  ['#inDate','#outDate','#expDate','#saleDate','#cbDate','#ebDate'].forEach(id => $(id).value = today());
 
   // ── Real-time Firestore listeners ─────────────────
   let unsubs = [];
@@ -204,6 +205,7 @@
     if (activePage === 'inventory') renderInventory();
     if (activePage === 'expenses')  renderExpenses();
     if (activePage === 'sales')     renderSales();
+    if (activePage === 'bill-generator') renderBillGenerator();
     if (activePage === 'reports')   renderReport();
     if (activePage === 'changelog') renderAuthLog();
   }
@@ -226,7 +228,7 @@
     if (type === 'out')  { editingOutId = null;   $('#formItemsOut').reset(); $('#outSubmitBtn').textContent = '+ Add Item Out'; }
     if (type === 'exp')  { editingExpId = null;   $('#formExpenses').reset(); $('#expSubmitBtn').textContent = '+ Add Expense'; }
     if (type === 'sale') { editingSaleId = null;  $('#formSales').reset();    $('#saleSubmitBtn').textContent = '+ Add Sale'; }
-    ['#inDate','#outDate','#expDate','#saleDate'].forEach(id => $(id).value = today());
+    ['#inDate','#outDate','#expDate','#saleDate','#cbDate','#ebDate'].forEach(id => $(id).value = today());
   }
 
   // ── Edit handler (delegated) ──────────────────────
@@ -1216,6 +1218,257 @@
     XLSX.writeFile(wb, 'canteen_sale_type_summary_FY' + fyLabel(fy) + '_' + today() + '.xlsx');
     logAuthEvent(auth.currentUser?.email, 'Exported Sale Type Summary XLSX');
   });
+
+  // ── Bill Generator ────────────────────────────────
+  // Toggle between Customer Bill and Expense Bill forms
+  $('#billType').addEventListener('change', () => {
+    const isCustomer = $('#billType').value === 'customer';
+    $('#billCustomerForm').style.display = isCustomer ? '' : 'none';
+    $('#billExpenseForm').style.display = isCustomer ? 'none' : '';
+    $('#billPreviewCard').style.display = 'none';
+  });
+
+  // ── Customer Bill: dynamic item rows ──────────────
+  function cbRecalc() {
+    let sub = 0;
+    $$('#cbItems .bill-item-row').forEach(row => {
+      const qty = parseFloat(row.querySelector('.cb-item-qty').value) || 0;
+      const rate = parseFloat(row.querySelector('.cb-item-rate').value) || 0;
+      const amt = qty * rate;
+      row.querySelector('.cb-item-amt').value = amt ? fmt(amt) : '';
+      sub += amt;
+    });
+    $('#cbSubtotal').value = fmt(sub);
+    const disc = parseFloat($('#cbDiscount').value) || 0;
+    $('#cbGrandTotal').value = fmt(Math.max(0, sub - disc));
+  }
+
+  function cbMakeRow() {
+    const row = document.createElement('div');
+    row.className = 'bill-item-row';
+    row.innerHTML = `<input type="text" placeholder="Item name" class="cb-item-name" required />
+      <input type="number" placeholder="Qty" class="cb-item-qty" min="1" step="1" value="1" required />
+      <input type="number" placeholder="Rate (₹)" class="cb-item-rate" min="0" step="0.01" required />
+      <input type="text" placeholder="Amount" class="cb-item-amt" readonly tabindex="-1" />
+      <button type="button" class="btn-sm btn-danger cb-remove-row" title="Remove">&times;</button>`;
+    return row;
+  }
+
+  $('#cbAddRow').addEventListener('click', () => { $('#cbItems').appendChild(cbMakeRow()); });
+
+  $('#cbItems').addEventListener('input', (e) => {
+    if (e.target.classList.contains('cb-item-qty') || e.target.classList.contains('cb-item-rate')) cbRecalc();
+  });
+  $('#cbItems').addEventListener('click', (e) => {
+    if (e.target.classList.contains('cb-remove-row')) {
+      if ($$('#cbItems .bill-item-row').length > 1) { e.target.closest('.bill-item-row').remove(); cbRecalc(); }
+      else toast('At least one item required', true);
+    }
+  });
+  $('#cbDiscount').addEventListener('input', cbRecalc);
+
+  // ── Expense Bill: dynamic item rows ───────────────
+  function ebRecalc() {
+    let total = 0;
+    $$('#ebItems .bill-item-row').forEach(row => {
+      total += parseFloat(row.querySelector('.eb-item-amt').value) || 0;
+    });
+    $('#ebTotal').value = fmt(total);
+  }
+
+  function ebMakeRow() {
+    const row = document.createElement('div');
+    row.className = 'bill-item-row';
+    row.innerHTML = `<input type="text" placeholder="Description" class="eb-item-desc" required />
+      <input type="number" placeholder="Amount (₹)" class="eb-item-amt" min="0" step="0.01" required />
+      <button type="button" class="btn-sm btn-danger eb-remove-row" title="Remove">&times;</button>`;
+    return row;
+  }
+
+  $('#ebAddRow').addEventListener('click', () => { $('#ebItems').appendChild(ebMakeRow()); });
+
+  $('#ebItems').addEventListener('input', (e) => {
+    if (e.target.classList.contains('eb-item-amt')) ebRecalc();
+  });
+  $('#ebItems').addEventListener('click', (e) => {
+    if (e.target.classList.contains('eb-remove-row')) {
+      if ($$('#ebItems .bill-item-row').length > 1) { e.target.closest('.bill-item-row').remove(); ebRecalc(); }
+      else toast('At least one item required', true);
+    }
+  });
+
+  // ── Bill Preview HTML builder ─────────────────────
+  function buildCustomerBillHTML() {
+    const rows = [];
+    let sub = 0;
+    $$('#cbItems .bill-item-row').forEach((row, i) => {
+      const name = row.querySelector('.cb-item-name').value.trim();
+      const qty = parseFloat(row.querySelector('.cb-item-qty').value) || 0;
+      const rate = parseFloat(row.querySelector('.cb-item-rate').value) || 0;
+      const amt = qty * rate;
+      if (!name || !amt) return;
+      sub += amt;
+      rows.push(`<tr><td>${i + 1}</td><td>${sanitize(name)}</td><td>${qty}</td><td>${fmt(rate)}</td><td style="text-align:right">${fmt(amt)}</td></tr>`);
+    });
+    if (!rows.length) return null;
+    const disc = parseFloat($('#cbDiscount').value) || 0;
+    const grand = Math.max(0, sub - disc);
+    return `<div class="bill-print" id="billPrintArea">
+      <div class="bill-header">
+        <h2>RTCIT Food Court</h2>
+        <p>Ram Tahal Choudhary Institute of Technology, Ranchi</p>
+      </div>
+      <h3 class="bill-title">CUSTOMER BILL</h3>
+      <div class="bill-meta">
+        <div><strong>Bill No:</strong> ${sanitize($('#cbBillNo').value || '—')}</div>
+        <div><strong>Date:</strong> ${fmtDate($('#cbDate').value) || '—'}</div>
+        <div><strong>Customer:</strong> ${sanitize($('#cbCustomer').value)}</div>
+        ${$('#cbPhone').value ? `<div><strong>Phone:</strong> ${sanitize($('#cbPhone').value)}</div>` : ''}
+      </div>
+      <table class="bill-table">
+        <thead><tr><th>#</th><th>Item</th><th>Qty</th><th>Rate</th><th style="text-align:right">Amount</th></tr></thead>
+        <tbody>${rows.join('')}</tbody>
+      </table>
+      <div class="bill-totals">
+        <div class="bill-total-row"><span>Subtotal</span><span>${fmt(sub)}</span></div>
+        ${disc ? `<div class="bill-total-row"><span>Discount</span><span>-${fmt(disc)}</span></div>` : ''}
+        <div class="bill-total-row bill-grand-total"><span>Grand Total</span><span>${fmt(grand)}</span></div>
+      </div>
+      ${$('#cbNotes').value ? `<div class="bill-notes"><strong>Notes:</strong> ${sanitize($('#cbNotes').value)}</div>` : ''}
+      <div class="bill-footer">
+        <p>Thank you for your patronage!</p>
+        <div class="bill-sig"><div>Authorized Signature</div></div>
+      </div>
+    </div>`;
+  }
+
+  function buildExpenseBillHTML() {
+    const rows = [];
+    let total = 0;
+    $$('#ebItems .bill-item-row').forEach((row, i) => {
+      const desc = row.querySelector('.eb-item-desc').value.trim();
+      const amt = parseFloat(row.querySelector('.eb-item-amt').value) || 0;
+      if (!desc || !amt) return;
+      total += amt;
+      rows.push(`<tr><td>${i + 1}</td><td>${sanitize(desc)}</td><td style="text-align:right">${fmt(amt)}</td></tr>`);
+    });
+    if (!rows.length) return null;
+    return `<div class="bill-print" id="billPrintArea">
+      <div class="bill-header">
+        <h2>RTCIT Food Court</h2>
+        <p>Ram Tahal Choudhary Institute of Technology, Ranchi</p>
+      </div>
+      <h3 class="bill-title">EXPENSE BILL / VOUCHER</h3>
+      <div class="bill-meta">
+        <div><strong>Voucher No:</strong> ${sanitize($('#ebBillNo').value || '—')}</div>
+        <div><strong>Date:</strong> ${fmtDate($('#ebDate').value) || '—'}</div>
+        <div><strong>Paid To:</strong> ${sanitize($('#ebPaidTo').value)}</div>
+        <div><strong>Category:</strong> ${sanitize($('#ebCategory').value)}</div>
+        <div><strong>Payment Mode:</strong> ${sanitize($('#ebPaymentMode').value)}</div>
+      </div>
+      <table class="bill-table">
+        <thead><tr><th>#</th><th>Description</th><th style="text-align:right">Amount</th></tr></thead>
+        <tbody>${rows.join('')}</tbody>
+      </table>
+      <div class="bill-totals">
+        <div class="bill-total-row bill-grand-total"><span>Total Amount</span><span>${fmt(total)}</span></div>
+      </div>
+      ${$('#ebNotes').value ? `<div class="bill-notes"><strong>Notes:</strong> ${sanitize($('#ebNotes').value)}</div>` : ''}
+      <div class="bill-footer">
+        <div class="bill-sig-row">
+          <div class="bill-sig"><div>Received By</div></div>
+          <div class="bill-sig"><div>Authorized Signature</div></div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Preview / PDF / Print handlers ────────────────
+  function showBillPreview(html) {
+    if (!html) return toast('Please fill in at least one item with valid data', true);
+    $('#billPreviewArea').innerHTML = html;
+    $('#billPreviewCard').style.display = '';
+    $('#billPreviewCard').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  async function downloadBillPdf(html, filename) {
+    if (!html) return toast('Please fill in at least one item with valid data', true);
+    const container = document.createElement('div');
+    container.style.cssText = 'position:absolute;left:-9999px;top:0;width:800px';
+    container.innerHTML = html;
+    document.body.appendChild(container);
+    const el = container.querySelector('.bill-print');
+    try {
+      toast('Generating PDF…');
+      const canvas = await html2canvas(el, { scale: 2, useCORS: true, logging: false });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+      const pageW = pdf.internal.pageSize.getWidth();
+      const margin = 10;
+      const imgW = pageW - margin * 2;
+      const imgH = (canvas.height * imgW) / canvas.width;
+      pdf.addImage(imgData, 'PNG', margin, margin, imgW, imgH);
+      pdf.save(filename + '_' + today() + '.pdf');
+      logAuthEvent(auth.currentUser?.email, 'Downloaded Bill PDF: ' + filename);
+      toast('PDF downloaded');
+    } catch (err) {
+      console.error('Bill PDF error:', err);
+      toast('Failed to generate PDF', true);
+    } finally {
+      document.body.removeChild(container);
+    }
+  }
+
+  function printBill(html) {
+    if (!html) return toast('Please fill in at least one item with valid data', true);
+    const w = window.open('', '_blank', 'width=820,height=900');
+    w.document.write(`<!DOCTYPE html><html><head><title>Bill</title>
+      <style>
+        body{font-family:Arial,sans-serif;padding:24px;color:#1e293b}
+        .bill-print{max-width:720px;margin:0 auto}
+        .bill-header{text-align:center;margin-bottom:8px}
+        .bill-header h2{margin:0;font-size:22px}
+        .bill-header p{margin:2px 0;font-size:13px;color:#64748b}
+        .bill-title{text-align:center;margin:12px 0;font-size:16px;letter-spacing:2px;border-top:2px solid #1e293b;border-bottom:2px solid #1e293b;padding:6px 0}
+        .bill-meta{display:grid;grid-template-columns:1fr 1fr;gap:4px 24px;font-size:14px;margin-bottom:16px}
+        .bill-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
+        .bill-table th,.bill-table td{border:1px solid #cbd5e1;padding:8px 10px;text-align:left}
+        .bill-table th{background:#f1f5f9;font-weight:600}
+        .bill-totals{text-align:right;margin:12px 0;font-size:14px}
+        .bill-total-row{display:flex;justify-content:flex-end;gap:32px;padding:4px 10px}
+        .bill-grand-total{font-weight:700;font-size:16px;border-top:2px solid #1e293b;margin-top:4px;padding-top:8px}
+        .bill-notes{font-size:13px;color:#475569;margin:12px 0;padding:8px;background:#f8fafc;border-radius:4px}
+        .bill-footer{margin-top:40px;font-size:13px;color:#64748b;text-align:center}
+        .bill-sig,.bill-sig-row div{margin-top:48px;border-top:1px solid #94a3b8;padding-top:4px;display:inline-block;min-width:180px}
+        .bill-sig-row{display:flex;justify-content:space-between}
+        @media print{body{padding:0}@page{margin:15mm}}
+      </style></head><body>${html}</body></html>`);
+    w.document.close();
+    w.focus();
+    w.print();
+  }
+
+  // Customer bill buttons
+  $('#cbPreview').addEventListener('click', () => showBillPreview(buildCustomerBillHTML()));
+  $('#cbDownloadPdf').addEventListener('click', () => {
+    const no = $('#cbBillNo').value.trim() || 'CustomerBill';
+    downloadBillPdf(buildCustomerBillHTML(), 'RTCIT_' + no.replace(/[^a-zA-Z0-9-_]/g, ''));
+  });
+  $('#cbPrint').addEventListener('click', () => printBill(buildCustomerBillHTML()));
+
+  // Expense bill buttons
+  $('#ebPreview').addEventListener('click', () => showBillPreview(buildExpenseBillHTML()));
+  $('#ebDownloadPdf').addEventListener('click', () => {
+    const no = $('#ebBillNo').value.trim() || 'ExpenseBill';
+    downloadBillPdf(buildExpenseBillHTML(), 'RTCIT_' + no.replace(/[^a-zA-Z0-9-_]/g, ''));
+  });
+  $('#ebPrint').addEventListener('click', () => printBill(buildExpenseBillHTML()));
+
+  function renderBillGenerator() {
+    // Set default dates if empty
+    if (!$('#cbDate').value) $('#cbDate').value = today();
+    if (!$('#ebDate').value) $('#ebDate').value = today();
+  }
 
   // ── P&L Computation (Financial Year: Apr–Mar) ────
   // fyStart = the calendar year in which April falls
