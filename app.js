@@ -113,7 +113,7 @@
     if (page === 'sales')     renderSales();
     if (page === 'bill-generator') renderBillGenerator();
     if (page === 'reports')   renderReport();
-    if (page === 'changelog') renderAuthLog();
+    if (page === 'changelog') { renderAuthLog(); renderVersionHistory(); }
     $('#sidebar').classList.remove('open');
     $('#sidebarOverlay').classList.remove('active');
   }
@@ -194,7 +194,7 @@
           return { id: d.id, ...data, ts: data.timestamp ? data.timestamp.toDate() : new Date() };
         });
         const activePage = document.querySelector('.nav-item.active')?.dataset.page;
-        if (activePage === 'changelog') renderAuthLog();
+        if (activePage === 'changelog') { renderAuthLog(); renderVersionHistory(); }
       }, (err) => console.error('AuthLogs listener error:', err)),
       colBills.orderBy('createdAt', 'desc').onSnapshot((snap) => {
         bills = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -214,7 +214,7 @@
     if (activePage === 'sales')     renderSales();
     if (activePage === 'bill-generator') renderBillGenerator();
     if (activePage === 'reports')   renderReport();
-    if (activePage === 'changelog') renderAuthLog();
+    if (activePage === 'changelog') { renderAuthLog(); renderVersionHistory(); }
   }
 
   // ── Items In ──────────────────────────────────────
@@ -2848,6 +2848,127 @@
         }).join('');
   }
   let lastFilteredAuthLog = [];
+
+  /* ── Version History (auto-rendered from data) ──────────────── */
+  const VERSION_HISTORY = [
+    { ver:'v3.4', date:'Apr 9, 2026', title:'Auto-Rendering Version History', items:[
+      'Changelog entries now rendered dynamically from a JS data array',
+      'Adding a new version only requires a single array entry — no HTML editing'
+    ]},
+    { ver:'v3.3', date:'Apr 8, 2026', title:'Bill History &amp; Persistence', items:[
+      'Bills saved to Firestore <code>bills</code> collection on generation',
+      'Real-time listener keeps bill history table in sync',
+      'Bill History table with sort, filter by type/month, view/PDF/print/delete',
+      'XLSX export of filtered bill history',
+      'Form auto-resets after successful bill generation'
+    ]},
+    { ver:'v3.2', date:'Apr 8, 2026', title:'Bill Format Updates', items:[
+      'Address changed to "Anandi, Ormanjhi, Ranchi"',
+      'Thank-you text updated',
+      'Signatures replaced with "This is a computer-generated document" note'
+    ]},
+    { ver:'v3.1', date:'Apr 8, 2026', title:'Auto-Generated Bill Numbers', items:[
+      'Customer bills: <code>FC/CB/{FY}/{MM}/NNN</code>',
+      'Expense bills: <code>FC/GE/{FY}/{MM}/NNN</code>',
+      'Firestore transaction-based counters for uniqueness',
+      'Bill No fields made read-only'
+    ]},
+    { ver:'v3.0', date:'Apr 8, 2026', title:'Bill Generator Tab', items:[
+      'New tab between Sales &amp; Reports',
+      'Customer Bill form with dynamic line items',
+      'General Expense Bill form',
+      'Live preview, PDF download, and print support'
+    ]},
+    { ver:'v2.9', date:'Apr 8, 2026', title:'Full Website Audit &amp; Security Fixes', items:[
+      'XSS sanitization on all user-facing output',
+      'Listener cleanup with unsub array &amp; debounce',
+      'Timezone-safe Indian FY calculation',
+      'Deferred script loading, meta tags, a11y CSS improvements'
+    ]},
+    { ver:'v2.8', date:'Apr 8, 2026', title:'Date Display DD/MM/YYYY Overlay', items:[
+      'Date picker overlay shows DD/MM/YYYY while editing',
+      'Scoped CSS to prevent layout conflicts'
+    ]},
+    { ver:'v2.7', date:'Apr 8, 2026', title:'Erase Data Modal &amp; Activity Categories', items:[
+      'Erase Data modal with password confirmation',
+      'Import &amp; erase actions tracked as activity categories'
+    ]},
+    { ver:'v2.6', date:'Apr 8, 2026', title:'Items In Form Reorder &amp; Default Dates', items:[
+      'Reordered Items In form fields for better flow',
+      'Date pickers default to today\'s date'
+    ]},
+    { ver:'v2.5', date:'Apr 8, 2026', title:'DD/MM/YYYY Date Format &amp; Responsive Sidebar', items:[
+      'All dates displayed in DD/MM/YYYY format',
+      'Collapsible responsive sidebar for mobile'
+    ]},
+    { ver:'v2.4', date:'Apr 8, 2026', title:'Month-wise Summary Tables &amp; Sortable Columns', items:[
+      'Month-wise collapsible summary sections for Items In, Items Out, Expenses, Sales',
+      'All table columns sortable with click-to-sort headers'
+    ]},
+    { ver:'v2.3', date:'Apr 8, 2026', title:'Advanced Changelog &amp; Activity Tracking', items:[
+      'Activity log with category filters, date range, user search',
+      'Badge-based category indicators',
+      'XLSX export for activity log'
+    ]},
+    { ver:'v2.2', date:'Apr 8, 2026', title:'Edit Records, Audit Logging &amp; UX Fixes', items:[
+      'Edit capability for Items In, Items Out, Expenses, and Sales',
+      'All edits, deletes, exports, and logins logged to Firestore',
+      'Improved table layouts and mobile responsiveness'
+    ]},
+    { ver:'v2.1', date:'Apr 8, 2026', title:'Security Hardening', items:[
+      'Auth state enforced — all data behind login',
+      'Firestore security rules tightened',
+      'Session timeout awareness'
+    ]},
+    { ver:'v2.0', date:'Apr 8, 2026', title:'Dashboard &amp; Reports Redesign', items:[
+      'Dashboard with Chart.js bar &amp; doughnut charts',
+      'P&amp;L / Reports page with monthly breakdown',
+      'XLSX export on every data page'
+    ]},
+    { ver:'v1.6', date:'Apr 7, 2026', title:'Items Out Enhancements', items:[
+      'Searchable dropdown for item names in Items Out',
+      'Auto-populated unit from Items In data'
+    ]},
+    { ver:'v1.5', date:'Apr 7, 2026', title:'Items In Enhancements', items:[
+      'Searchable dropdown for item names',
+      'Bulk import from Excel (XLSX)'
+    ]},
+    { ver:'v1.4', date:'Apr 7, 2026', title:'Financial Year Support', items:[
+      'Indian FY (April–March) selector',
+      'All pages filter by selected FY'
+    ]},
+    { ver:'v1.3', date:'Apr 7, 2026', title:'Branding', items:[
+      'RTCIT Food Court branding and logo',
+      'Custom colour theme'
+    ]},
+    { ver:'v1.2', date:'Apr 7, 2026', title:'Login &amp; Access Control', items:[
+      'Firebase Email/Password authentication',
+      'Login gate — no data visible without sign-in'
+    ]},
+    { ver:'v1.1', date:'Apr 7, 2026', title:'Cloud Database', items:[
+      'Migrated to Firebase Firestore',
+      'Real-time data sync across devices'
+    ]},
+    { ver:'v1.0', date:'Apr 7, 2026', title:'Initial Release', items:[
+      'Items In, Items Out, Inventory, Other Expenses, Sales tabs',
+      'Basic add/delete with local table rendering'
+    ]}
+  ];
+
+  function renderVersionHistory() {
+    const el = $('#versionHistoryList');
+    if (!el) return;
+    el.innerHTML = VERSION_HISTORY.map(v =>
+      `<div class="changelog-entry">
+        <div class="changelog-version">${v.ver}</div>
+        <div class="changelog-date">${v.date}</div>
+        <div class="changelog-body">
+          <strong>${v.title}</strong>
+          <ul>${v.items.map(i => `<li>${i}</li>`).join('')}</ul>
+        </div>
+      </div>`
+    ).join('');
+  }
 
   // Filter listeners for activity log
   ['filterLogCategory','filterLogUser','filterLogFrom','filterLogTo'].forEach(id => {
