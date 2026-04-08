@@ -1390,26 +1390,9 @@
     const bestMonth = monthsWithData.length ? monthsWithData.reduce((a, b) => a.net > b.net ? a : b) : null;
     const worstMonth = monthsWithData.length ? monthsWithData.reduce((a, b) => a.net < b.net ? a : b) : null;
 
-    // P&L KPI Row 1
-    $('#pnlRevenue').textContent = fmt(totalRevenue);
-    $('#pnlItemCosts').textContent = fmt(totalItemCost);
-    $('#pnlOtherExp').textContent = fmt(totalExpenses);
-    $('#pnlExpenses').textContent = fmt(totalCost);
-    const pnlNetEl = $('#pnlNet');
-    pnlNetEl.textContent = fmt(netProfit);
-    pnlNetEl.className = 'stat-value ' + (netProfit >= 0 ? 'profit' : 'loss');
-    const pnlMgEl = $('#pnlMargin');
-    pnlMgEl.textContent = pnlTotalMargin !== '—' ? pnlTotalMargin + '%' : '—';
-    pnlMgEl.className = 'stat-value ' + (netProfit >= 0 ? 'profit' : 'loss');
-
-    // P&L KPI Row 2
-    $('#pnlCostRatio').textContent = totalRevenue > 0 ? ((totalCost / totalRevenue) * 100).toFixed(1) + '%' : '—';
-    $('#pnlAvgMonthRev').textContent = fmt(totalRevenue / activeMonths);
-    $('#pnlAvgMonthCost').textContent = fmt(totalCost / activeMonths);
-    $('#pnlBestMonth').textContent = bestMonth ? bestMonth.label + ' (' + fmt(bestMonth.net) + ')' : '—';
-    $('#pnlBestMonth').className = 'stat-value profit';
-    $('#pnlWorstMonth').textContent = worstMonth ? worstMonth.label + ' (' + fmt(worstMonth.net) + ')' : '—';
-    $('#pnlWorstMonth').className = 'stat-value loss';
+    // Dashboard Best/Worst Month KPIs
+    $('#statBestMonth').textContent = bestMonth ? bestMonth.label + ' (' + fmt(bestMonth.net) + ')' : '—';
+    $('#statWorstMonth').textContent = worstMonth ? worstMonth.label + ' (' + fmt(worstMonth.net) + ')' : '—';
 
     // P&L Table
     const pnlTbody = $('#tablePnl tbody');
@@ -1905,6 +1888,45 @@
     addSheet('rptDailyTable', 'Daily Breakdown');
     XLSX.writeFile(wb, 'canteen_report_' + from + '_to_' + to + '.xlsx');
     toast('Report exported to .xlsx');
+  });
+
+  // Export Report as PDF
+  $('#btnExportPdf').addEventListener('click', async () => {
+    const output = $('#reportOutput');
+    if (output.style.display === 'none') return toast('Generate a report first', true);
+    toast('Generating PDF…');
+    try {
+      const canvas = await html2canvas(output, { scale: 2, useCORS: true, logging: false });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 10;
+      const usableW = pageW - margin * 2;
+      const imgW = usableW;
+      const imgH = (canvas.height * imgW) / canvas.width;
+      let y = margin;
+      let remaining = imgH;
+      const usableH = pageH - margin * 2;
+      while (remaining > 0) {
+        if (y !== margin) pdf.addPage();
+        const srcY = (imgH - remaining) / imgH * canvas.height;
+        const sliceH = Math.min(usableH, remaining);
+        const srcSliceH = (sliceH / imgH) * canvas.height;
+        const sliceCanvas = document.createElement('canvas');
+        sliceCanvas.width = canvas.width;
+        sliceCanvas.height = srcSliceH;
+        sliceCanvas.getContext('2d').drawImage(canvas, 0, srcY, canvas.width, srcSliceH, 0, 0, canvas.width, srcSliceH);
+        pdf.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', margin, margin, imgW, sliceH);
+        remaining -= usableH;
+      }
+      const { from, to } = getReportDateRange();
+      pdf.save('canteen_report_' + from + '_to_' + to + '.pdf');
+      toast('PDF downloaded');
+    } catch (err) {
+      console.error(err);
+      toast('PDF generation failed', true);
+    }
   });
 
   // ── Clear Data ────────────────────────────────────

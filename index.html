@@ -7,6 +7,8 @@
   <link rel="stylesheet" href="styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 </head>
@@ -95,211 +97,108 @@
     <div class="page-container">
       <!-- ==================== DASHBOARD ==================== -->
       <section class="page active" id="page-dashboard">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">
-          <h3 style="font-size:1rem;font-weight:700">Management Dashboard</h3>
-          <select id="dashFY" class="filter-input" style="width:auto"></select>
-        </div>
-
-        <!-- KPI Cards Row 1 -->
-        <div class="stat-cards" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">
-          <div class="stat-card card-green">
-            <div class="stat-icon">📈</div>
-            <div class="stat-info">
-              <span class="stat-label">Total Revenue</span>
-              <span class="stat-value" id="statRevenue">₹0</span>
-            </div>
+        <!-- Header Bar -->
+        <div class="dash-header">
+          <div>
+            <h2 class="dash-title">Executive Dashboard</h2>
+            <p class="dash-subtitle">Financial health overview at a glance</p>
           </div>
-          <div class="stat-card card-red">
-            <div class="stat-icon">📉</div>
-            <div class="stat-info">
-              <span class="stat-label">Total Costs</span>
-              <span class="stat-value" id="statCost">₹0</span>
-            </div>
-          </div>
-          <div class="stat-card card-blue">
-            <div class="stat-icon">💰</div>
-            <div class="stat-info">
-              <span class="stat-label">Net Profit / Loss</span>
-              <span class="stat-value" id="statProfit">₹0</span>
-            </div>
-          </div>
-          <div class="stat-card card-orange">
-            <div class="stat-icon">📊</div>
-            <div class="stat-info">
-              <span class="stat-label">Profit Margin</span>
-              <span class="stat-value" id="statMargin">—</span>
-            </div>
-          </div>
-          <div class="stat-card card-blue">
-            <div class="stat-icon">📦</div>
-            <div class="stat-info">
-              <span class="stat-label">Inventory Items</span>
-              <span class="stat-value" id="statInventory">0</span>
-            </div>
-          </div>
-          <div class="stat-card card-green">
-            <div class="stat-icon">🧾</div>
-            <div class="stat-info">
-              <span class="stat-label">Total Transactions</span>
-              <span class="stat-value" id="statTxnCount">0</span>
-            </div>
+          <div style="display:flex;gap:10px;align-items:center">
+            <select id="dashFY" class="filter-input" style="width:auto"></select>
+            <button class="btn-secondary btn-sm" id="btnExportPnl">Export P&amp;L .xlsx</button>
           </div>
         </div>
 
-        <!-- KPI Cards Row 2: Avg daily -->
-        <div class="stat-cards" style="grid-template-columns:repeat(auto-fit,minmax(190px,1fr))">
-          <div class="stat-card card-green">
-            <div class="stat-info">
-              <span class="stat-label">Avg Daily Revenue</span>
-              <span class="stat-value" id="statAvgRevenue">₹0</span>
-            </div>
-          </div>
-          <div class="stat-card card-red">
-            <div class="stat-info">
-              <span class="stat-label">Avg Daily Cost</span>
-              <span class="stat-value" id="statAvgCost">₹0</span>
-            </div>
-          </div>
-          <div class="stat-card card-orange">
-            <div class="stat-info">
-              <span class="stat-label">Item Cost Ratio</span>
-              <span class="stat-value" id="statItemCostRatio">—</span>
-            </div>
-          </div>
-          <div class="stat-card card-blue">
-            <div class="stat-info">
-              <span class="stat-label">Expense Ratio</span>
-              <span class="stat-value" id="statExpRatio">—</span>
-            </div>
+        <!-- ─── Section 1: Financial Overview ─── -->
+        <div class="dash-section">
+          <h3 class="section-heading"><span class="section-icon">💰</span> Financial Overview</h3>
+          <div class="stat-cards kpi-primary">
+            <div class="stat-card card-green"><div class="stat-icon">📈</div><div class="stat-info"><span class="stat-label">Total Revenue</span><span class="stat-value" id="statRevenue">₹0</span></div></div>
+            <div class="stat-card card-red"><div class="stat-icon">📉</div><div class="stat-info"><span class="stat-label">Total Costs</span><span class="stat-value" id="statCost">₹0</span></div></div>
+            <div class="stat-card card-blue"><div class="stat-icon">💎</div><div class="stat-info"><span class="stat-label">Net Profit / Loss</span><span class="stat-value" id="statProfit">₹0</span></div></div>
+            <div class="stat-card card-orange"><div class="stat-icon">📊</div><div class="stat-info"><span class="stat-label">Profit Margin</span><span class="stat-value" id="statMargin">—</span></div></div>
           </div>
         </div>
 
-        <!-- Charts Row 1 -->
-        <div class="charts-row">
-          <div class="chart-card">
-            <h3>Month-wise Profit &amp; Loss</h3>
-            <canvas id="chartMonthlyPnl"></canvas>
-          </div>
-          <div class="chart-card">
-            <h3>Revenue vs Cost Breakdown</h3>
-            <canvas id="chartRevenueCost"></canvas>
-          </div>
-        </div>
-
-        <!-- Charts Row 2 -->
-        <div class="charts-row">
-          <div class="chart-card">
-            <h3>Top 10 Items by Revenue</h3>
-            <canvas id="chartTopItems"></canvas>
-          </div>
-          <div class="chart-card">
-            <h3>Top 10 Items by Purchase Cost</h3>
-            <canvas id="chartTopCostItems"></canvas>
+        <!-- ─── Section 2: Operational Metrics ─── -->
+        <div class="dash-section">
+          <h3 class="section-heading"><span class="section-icon">⚙️</span> Operational Metrics</h3>
+          <div class="stat-cards kpi-secondary">
+            <div class="stat-card"><div class="stat-info"><span class="stat-label">Avg Daily Revenue</span><span class="stat-value" id="statAvgRevenue">₹0</span></div></div>
+            <div class="stat-card"><div class="stat-info"><span class="stat-label">Avg Daily Cost</span><span class="stat-value" id="statAvgCost">₹0</span></div></div>
+            <div class="stat-card"><div class="stat-info"><span class="stat-label">Item Cost Ratio</span><span class="stat-value" id="statItemCostRatio">—</span></div></div>
+            <div class="stat-card"><div class="stat-info"><span class="stat-label">Expense Ratio</span><span class="stat-value" id="statExpRatio">—</span></div></div>
+            <div class="stat-card"><div class="stat-info"><span class="stat-label">Inventory Items</span><span class="stat-value" id="statInventory">0</span></div></div>
+            <div class="stat-card"><div class="stat-info"><span class="stat-label">Total Transactions</span><span class="stat-value" id="statTxnCount">0</span></div></div>
+            <div class="stat-card"><div class="stat-info"><span class="stat-label">Best Month</span><span class="stat-value profit" id="statBestMonth">—</span></div></div>
+            <div class="stat-card"><div class="stat-info"><span class="stat-label">Worst Month</span><span class="stat-value loss" id="statWorstMonth">—</span></div></div>
           </div>
         </div>
 
-        <!-- Charts Row 3 -->
-        <div class="charts-row">
-          <div class="chart-card">
-            <h3>Category-wise Sales</h3>
-            <canvas id="chartCategorySales"></canvas>
-          </div>
-          <div class="chart-card">
-            <h3>Person-wise Sales</h3>
-            <canvas id="chartPersonSales"></canvas>
-          </div>
-        </div>
-
-        <!-- Charts Row 4 -->
-        <div class="charts-row">
-          <div class="chart-card">
-            <h3>Sale Type Breakdown</h3>
-            <canvas id="chartSaleType"></canvas>
-          </div>
-          <div class="chart-card">
-            <h3>Other Expenses by Category</h3>
-            <canvas id="chartExpCategory"></canvas>
-          </div>
-        </div>
-
-        <!-- Summary Tables Row -->
-        <div class="charts-row">
-          <div class="chart-card">
-            <h3>Top 10 Selling Items</h3>
-            <div class="table-wrapper">
-              <table id="dashTopSelling">
-                <thead><tr><th>#</th><th>Item</th><th>Qty Sold</th><th>Revenue (₹)</th></tr></thead>
-                <tbody></tbody>
-              </table>
-            </div>
-          </div>
-          <div class="chart-card">
-            <h3>Top 10 Purchased Items</h3>
-            <div class="table-wrapper">
-              <table id="dashTopPurchased">
-                <thead><tr><th>#</th><th>Item</th><th>Qty Bought</th><th>Cost (₹)</th></tr></thead>
-                <tbody></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- Month-wise Summary Table -->
-        <div class="table-card">
-          <div class="table-header">
-            <h3>Month-wise Financial Summary</h3>
-          </div>
-          <div class="table-wrapper">
-            <table id="dashMonthlyTable">
-              <thead>
-                <tr><th>Month</th><th>Revenue</th><th>Item Cost</th><th>Expenses</th><th>Total Cost</th><th>Profit/Loss</th><th>Margin %</th><th>Cumulative P&amp;L</th></tr>
-              </thead>
-              <tbody></tbody>
-              <tfoot><tr id="dashMonthlyTotalRow"><td><strong>TOTAL</strong></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr></tfoot>
-            </table>
-          </div>
-        </div>
-
-        <!-- ═══════════ P&L SECTION ═══════════ -->
-        <div style="margin-top:32px;padding-top:24px;border-top:3px solid var(--border)">
-          <div class="pnl-controls" style="margin-bottom:20px">
-            <h3>📊 Profit &amp; Loss Statement</h3>
-            <div class="pnl-filters">
-              <button class="btn-secondary btn-sm" id="btnExportPnl">Export P&amp;L .xlsx</button>
-            </div>
-          </div>
-
-          <!-- P&L KPIs -->
-          <div class="stat-cards" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">
-            <div class="stat-card card-green"><div class="stat-info"><span class="stat-label">Total Revenue</span><span class="stat-value" id="pnlRevenue">₹0</span></div></div>
-            <div class="stat-card card-red"><div class="stat-info"><span class="stat-label">Item Costs</span><span class="stat-value" id="pnlItemCosts">₹0</span></div></div>
-            <div class="stat-card card-orange"><div class="stat-info"><span class="stat-label">Other Expenses</span><span class="stat-value" id="pnlOtherExp">₹0</span></div></div>
-            <div class="stat-card card-red"><div class="stat-info"><span class="stat-label">Total Costs</span><span class="stat-value" id="pnlExpenses">₹0</span></div></div>
-            <div class="stat-card card-blue"><div class="stat-info"><span class="stat-label">Net Profit / Loss</span><span class="stat-value" id="pnlNet">₹0</span></div></div>
-            <div class="stat-card card-orange"><div class="stat-info"><span class="stat-label">Profit Margin</span><span class="stat-value" id="pnlMargin">—</span></div></div>
-          </div>
-
-          <div class="stat-cards" style="grid-template-columns:repeat(auto-fit,minmax(190px,1fr))">
-            <div class="stat-card card-green"><div class="stat-info"><span class="stat-label">Cost-to-Revenue Ratio</span><span class="stat-value" id="pnlCostRatio">—</span></div></div>
-            <div class="stat-card card-blue"><div class="stat-info"><span class="stat-label">Avg Monthly Revenue</span><span class="stat-value" id="pnlAvgMonthRev">₹0</span></div></div>
-            <div class="stat-card card-orange"><div class="stat-info"><span class="stat-label">Avg Monthly Cost</span><span class="stat-value" id="pnlAvgMonthCost">₹0</span></div></div>
-            <div class="stat-card card-green"><div class="stat-info"><span class="stat-label">Best Month</span><span class="stat-value" id="pnlBestMonth">—</span></div></div>
-            <div class="stat-card card-red"><div class="stat-info"><span class="stat-label">Worst Month</span><span class="stat-value" id="pnlWorstMonth">—</span></div></div>
-          </div>
-
-          <!-- P&L Charts -->
+        <!-- ─── Section 3: Trend Analysis ─── -->
+        <div class="dash-section">
+          <h3 class="section-heading"><span class="section-icon">📈</span> Trend Analysis</h3>
           <div class="charts-row">
-            <div class="chart-card"><h3>Month-wise P&amp;L Overview</h3><canvas id="chartPnlDetailed"></canvas></div>
-            <div class="chart-card"><h3>Cost Composition</h3><canvas id="chartPnlCostSplit"></canvas></div>
-          </div>
-          <div class="charts-row">
+            <div class="chart-card"><h3>Month-wise Revenue, Costs &amp; Net P&amp;L</h3><canvas id="chartMonthlyPnl"></canvas></div>
             <div class="chart-card"><h3>Cumulative Profit / Loss Trend</h3><canvas id="chartPnlCumulative"></canvas></div>
-            <div class="chart-card"><h3>Month-wise Profit Margin %</h3><canvas id="chartPnlMarginTrend"></canvas></div>
           </div>
+          <div class="charts-row">
+            <div class="chart-card"><h3>Month-wise Profit Margin %</h3><canvas id="chartPnlMarginTrend"></canvas></div>
+            <div class="chart-card"><h3>Revenue vs Cost Composition</h3><canvas id="chartRevenueCost"></canvas></div>
+          </div>
+        </div>
 
-          <!-- P&L Detailed Table -->
+        <!-- ─── Section 4: Revenue Analytics ─── -->
+        <div class="dash-section">
+          <h3 class="section-heading"><span class="section-icon">🛒</span> Revenue Analytics</h3>
+          <div class="charts-row">
+            <div class="chart-card"><h3>Top 10 Items by Revenue</h3><canvas id="chartTopItems"></canvas></div>
+            <div class="chart-card"><h3>Category-wise Sales</h3><canvas id="chartCategorySales"></canvas></div>
+          </div>
+          <div class="charts-row">
+            <div class="chart-card"><h3>Person-wise Sales</h3><canvas id="chartPersonSales"></canvas></div>
+            <div class="chart-card"><h3>Sale Type Breakdown</h3><canvas id="chartSaleType"></canvas></div>
+          </div>
+          <div class="charts-row">
+            <div class="chart-card">
+              <h3>Top 10 Selling Items</h3>
+              <div class="table-wrapper"><table id="dashTopSelling"><thead><tr><th>#</th><th>Item</th><th>Qty Sold</th><th>Revenue (₹)</th></tr></thead><tbody></tbody></table></div>
+            </div>
+            <div class="chart-card">
+              <h3>Revenue Sources (Month-wise)</h3>
+              <div class="table-wrapper"><table id="pnlRevenueSourcesTable"><thead><tr><th>Source</th><th>Apr</th><th>May</th><th>Jun</th><th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Total</th><th>%</th></tr></thead><tbody></tbody><tfoot><tr id="pnlRevSourceTotalRow"></tr></tfoot></table></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── Section 5: Cost Analytics ─── -->
+        <div class="dash-section">
+          <h3 class="section-heading"><span class="section-icon">💸</span> Cost Analytics</h3>
+          <div class="charts-row">
+            <div class="chart-card"><h3>Top 10 Items by Purchase Cost</h3><canvas id="chartTopCostItems"></canvas></div>
+            <div class="chart-card"><h3>Other Expenses by Category</h3><canvas id="chartExpCategory"></canvas></div>
+          </div>
+          <div class="charts-row">
+            <div class="chart-card">
+              <h3>Top 10 Purchased Items</h3>
+              <div class="table-wrapper"><table id="dashTopPurchased"><thead><tr><th>#</th><th>Item</th><th>Qty Bought</th><th>Cost (₹)</th></tr></thead><tbody></tbody></table></div>
+            </div>
+            <div class="chart-card">
+              <h3>Expense Category Breakdown (Month-wise)</h3>
+              <div class="table-wrapper"><table id="pnlExpCategoryTable"><thead><tr><th>Category</th><th>Apr</th><th>May</th><th>Jun</th><th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Total</th><th>%</th></tr></thead><tbody></tbody><tfoot><tr id="pnlExpCatTotalRow"></tr></tfoot></table></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── Section 6: Profit & Loss Statement ─── -->
+        <div class="dash-section">
+          <h3 class="section-heading"><span class="section-icon">📋</span> Profit &amp; Loss Statement</h3>
+          <div class="charts-row" style="margin-bottom:20px">
+            <div class="chart-card"><h3>Detailed P&amp;L (Bar + Line)</h3><canvas id="chartPnlDetailed"></canvas></div>
+            <div class="chart-card"><h3>Cost Composition Split</h3><canvas id="chartPnlCostSplit"></canvas></div>
+          </div>
           <div class="table-card">
-            <div class="table-header"><h3>Month-wise Detailed Breakdown</h3></div>
+            <div class="table-header"><h3>Month-wise P&amp;L Breakdown</h3></div>
             <div class="table-wrapper">
               <table id="tablePnl">
                 <thead>
@@ -307,8 +206,8 @@
                     <th class="sortable" data-col="0">Month <span class="sort-icon"></span></th>
                     <th class="sortable" data-col="1">Revenue (₹) <span class="sort-icon"></span></th>
                     <th class="sortable" data-col="2">Item Costs (₹) <span class="sort-icon"></span></th>
-                    <th class="sortable" data-col="3">Other Expenses (₹) <span class="sort-icon"></span></th>
-                    <th class="sortable" data-col="4">Total Costs (₹) <span class="sort-icon"></span></th>
+                    <th class="sortable" data-col="3">Other Exp (₹) <span class="sort-icon"></span></th>
+                    <th class="sortable" data-col="4">Total Cost (₹) <span class="sort-icon"></span></th>
                     <th class="sortable" data-col="5">Net P&amp;L (₹) <span class="sort-icon"></span></th>
                     <th class="sortable" data-col="6">Margin % <span class="sort-icon"></span></th>
                     <th class="sortable" data-col="7">Cumulative (₹) <span class="sort-icon"></span></th>
@@ -319,42 +218,32 @@
               </table>
             </div>
           </div>
+        </div>
 
-          <!-- Revenue Sources -->
+        <!-- ─── Section 7: Month-wise Summary ─── -->
+        <div class="dash-section">
+          <h3 class="section-heading"><span class="section-icon">📅</span> Month-wise Financial Summary</h3>
           <div class="table-card">
-            <div class="table-header"><h3>Revenue Sources (Sale Types)</h3></div>
             <div class="table-wrapper">
-              <table id="pnlRevenueSourcesTable">
-                <thead><tr><th>Sale Type</th><th>Apr</th><th>May</th><th>Jun</th><th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Total</th><th>% Share</th></tr></thead>
+              <table id="dashMonthlyTable">
+                <thead><tr><th>Month</th><th>Revenue</th><th>Item Cost</th><th>Expenses</th><th>Total Cost</th><th>Profit/Loss</th><th>Margin %</th><th>Cumulative P&amp;L</th></tr></thead>
                 <tbody></tbody>
-                <tfoot><tr id="pnlRevSourceTotalRow"></tr></tfoot>
-              </table>
-            </div>
-          </div>
-
-          <!-- Expense Category Breakdown -->
-          <div class="table-card">
-            <div class="table-header"><h3>Expense Category Breakdown</h3></div>
-            <div class="table-wrapper">
-              <table id="pnlExpCategoryTable">
-                <thead><tr><th>Category</th><th>Apr</th><th>May</th><th>Jun</th><th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Total</th><th>% Share</th></tr></thead>
-                <tbody></tbody>
-                <tfoot><tr id="pnlExpCatTotalRow"></tr></tfoot>
+                <tfoot><tr id="dashMonthlyTotalRow"><td><strong>TOTAL</strong></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr></tfoot>
               </table>
             </div>
           </div>
         </div>
 
-        <!-- Recent Transactions -->
-        <div class="table-card">
-          <div class="table-header">
-            <h3>Recent Transactions</h3>
-          </div>
-          <div class="table-wrapper">
-            <table id="recentTransactions">
-              <thead><tr><th>Date</th><th>Type</th><th>Item</th><th>Qty</th><th>Amount (₹)</th></tr></thead>
-              <tbody></tbody>
-            </table>
+        <!-- ─── Section 8: Recent Activity ─── -->
+        <div class="dash-section">
+          <h3 class="section-heading"><span class="section-icon">🕐</span> Recent Activity</h3>
+          <div class="table-card">
+            <div class="table-wrapper">
+              <table id="recentTransactions">
+                <thead><tr><th>Date</th><th>Type</th><th>Item</th><th>Qty</th><th>Amount (₹)</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
           </div>
         </div>
       </section>
@@ -921,141 +810,140 @@
 
       <!-- ==================== REPORTS ==================== -->
       <section class="page" id="page-reports">
+        <!-- Report Header -->
+        <div class="dash-header">
+          <div>
+            <h2 class="dash-title">Report Generator</h2>
+            <p class="dash-subtitle" id="rptPeriodLabel">Select a period and generate a detailed report</p>
+          </div>
+        </div>
+
         <!-- Period Selector Bar -->
-        <div class="table-card" style="margin-bottom:20px">
-          <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end">
-            <div class="form-group" style="margin:0;min-width:140px">
-              <label for="rptPeriod" style="font-size:.75rem;margin-bottom:4px">Period</label>
+        <div class="table-card rpt-controls" style="margin-bottom:24px">
+          <div class="rpt-selector-row">
+            <div class="form-group" style="margin:0;min-width:150px">
+              <label for="rptPeriod">Report Period</label>
               <select id="rptPeriod" class="filter-input" style="width:100%">
                 <option value="this-week">This Week</option>
                 <option value="last-week">Last Week</option>
                 <option value="this-month" selected>This Month</option>
                 <option value="last-month">Last Month</option>
-                <option value="this-fy">This FY</option>
-                <option value="last-fy">Last FY</option>
-                <option value="custom">Custom Range</option>
+                <option value="this-fy">This Financial Year</option>
+                <option value="last-fy">Last Financial Year</option>
+                <option value="custom">Custom Date Range</option>
               </select>
             </div>
-            <div class="form-group" style="margin:0;min-width:130px;display:none" id="rptCustomFrom">
-              <label for="rptFrom" style="font-size:.75rem;margin-bottom:4px">From</label>
+            <div class="form-group" style="margin:0;min-width:140px;display:none" id="rptCustomFrom">
+              <label for="rptFrom">From Date</label>
               <input type="date" id="rptFrom" class="filter-input" style="width:100%" />
             </div>
-            <div class="form-group" style="margin:0;min-width:130px;display:none" id="rptCustomTo">
-              <label for="rptTo" style="font-size:.75rem;margin-bottom:4px">To</label>
+            <div class="form-group" style="margin:0;min-width:140px;display:none" id="rptCustomTo">
+              <label for="rptTo">To Date</label>
               <input type="date" id="rptTo" class="filter-input" style="width:100%" />
             </div>
-            <button class="btn-primary btn-sm" id="btnGenReport" style="height:36px">Generate Report</button>
-            <button class="btn-secondary btn-sm" id="btnExportReport" style="height:36px">Export All .xlsx</button>
+            <div class="rpt-btn-group">
+              <button class="btn-primary btn-sm" id="btnGenReport">Generate Report</button>
+              <button class="btn-secondary btn-sm" id="btnExportReport">📥 Export Excel</button>
+              <button class="btn-secondary btn-sm" id="btnExportPdf">📄 Download PDF</button>
+            </div>
           </div>
-          <div id="rptPeriodLabel" style="margin-top:10px;font-size:.82rem;color:var(--text-light)"></div>
         </div>
 
-        <!-- Report Output -->
+        <!-- Report Output (printable area) -->
         <div id="reportOutput" style="display:none">
 
-          <!-- KPI Cards -->
-          <div class="stats-grid" style="margin-bottom:20px">
-            <div class="stat-card"><div class="stat-label">Total Revenue</div><div class="stat-value" id="rptRevenue">₹0</div></div>
-            <div class="stat-card"><div class="stat-label">Total Purchases</div><div class="stat-value" id="rptPurchases">₹0</div></div>
-            <div class="stat-card"><div class="stat-label">Other Expenses</div><div class="stat-value" id="rptExpenses">₹0</div></div>
-            <div class="stat-card"><div class="stat-label">Total Cost</div><div class="stat-value" id="rptTotalCost">₹0</div></div>
-            <div class="stat-card"><div class="stat-label">Net Profit / Loss</div><div class="stat-value" id="rptNet">₹0</div></div>
-            <div class="stat-card"><div class="stat-label">Margin %</div><div class="stat-value" id="rptMargin">—</div></div>
-            <div class="stat-card"><div class="stat-label">Transactions</div><div class="stat-value" id="rptTxns">0</div></div>
-            <div class="stat-card"><div class="stat-label">Active Days</div><div class="stat-value" id="rptDays">0</div></div>
-            <div class="stat-card"><div class="stat-label">Avg Daily Revenue</div><div class="stat-value" id="rptAvgRev">₹0</div></div>
-            <div class="stat-card"><div class="stat-label">Avg Daily Cost</div><div class="stat-value" id="rptAvgCost">₹0</div></div>
-          </div>
-
-          <!-- Charts Row -->
-          <div class="chart-grid" style="margin-bottom:20px">
-            <div class="chart-card"><h4>Revenue vs Cost</h4><canvas id="chartRptRevCost"></canvas></div>
-            <div class="chart-card"><h4>Cost Breakdown</h4><canvas id="chartRptCostBreak"></canvas></div>
-            <div class="chart-card"><h4>Daily Revenue Trend</h4><canvas id="chartRptDailyRev"></canvas></div>
-            <div class="chart-card"><h4>Expense Categories</h4><canvas id="chartRptExpCat"></canvas></div>
-          </div>
-
-          <!-- Purchase Summary by Item -->
-          <div class="table-card" style="margin-bottom:20px">
-            <div class="table-header"><h3>Purchase Summary — by Item</h3></div>
-            <div class="table-scroll">
-              <table id="rptPurchaseTable">
-                <thead><tr><th>Item</th><th>Brand</th><th>Supplier</th><th>Qty</th><th>Unit</th><th>Total Cost (₹)</th><th>Avg Rate (₹)</th></tr></thead>
-                <tbody></tbody>
-                <tfoot><tr id="rptPurchaseTotalRow"></tr></tfoot>
-              </table>
+          <!-- Section 1: Executive Summary KPIs -->
+          <div class="dash-section">
+            <h3 class="section-heading"><span class="section-icon">📊</span> Executive Summary</h3>
+            <div class="stat-cards kpi-primary">
+              <div class="stat-card card-green"><div class="stat-icon">📈</div><div class="stat-info"><span class="stat-label">Total Revenue</span><span class="stat-value" id="rptRevenue">₹0</span></div></div>
+              <div class="stat-card card-red"><div class="stat-icon">📉</div><div class="stat-info"><span class="stat-label">Total Purchases</span><span class="stat-value" id="rptPurchases">₹0</span></div></div>
+              <div class="stat-card card-orange"><div class="stat-icon">💳</div><div class="stat-info"><span class="stat-label">Other Expenses</span><span class="stat-value" id="rptExpenses">₹0</span></div></div>
+              <div class="stat-card card-red"><div class="stat-icon">💸</div><div class="stat-info"><span class="stat-label">Total Cost</span><span class="stat-value" id="rptTotalCost">₹0</span></div></div>
+              <div class="stat-card card-blue"><div class="stat-icon">💎</div><div class="stat-info"><span class="stat-label">Net Profit / Loss</span><span class="stat-value" id="rptNet">₹0</span></div></div>
+            </div>
+            <div class="stat-cards kpi-secondary">
+              <div class="stat-card"><div class="stat-info"><span class="stat-label">Margin %</span><span class="stat-value" id="rptMargin">—</span></div></div>
+              <div class="stat-card"><div class="stat-info"><span class="stat-label">Transactions</span><span class="stat-value" id="rptTxns">0</span></div></div>
+              <div class="stat-card"><div class="stat-info"><span class="stat-label">Active Days</span><span class="stat-value" id="rptDays">0</span></div></div>
+              <div class="stat-card"><div class="stat-info"><span class="stat-label">Avg Daily Revenue</span><span class="stat-value" id="rptAvgRev">₹0</span></div></div>
+              <div class="stat-card"><div class="stat-info"><span class="stat-label">Avg Daily Cost</span><span class="stat-value" id="rptAvgCost">₹0</span></div></div>
             </div>
           </div>
 
-          <!-- Purchase Summary by Supplier -->
-          <div class="table-card" style="margin-bottom:20px">
-            <div class="table-header"><h3>Purchase Summary — by Supplier</h3></div>
-            <div class="table-scroll">
-              <table id="rptSupplierTable">
-                <thead><tr><th>Supplier</th><th>Items</th><th>Total Qty</th><th>Total Cost (₹)</th><th>% of Purchases</th></tr></thead>
-                <tbody></tbody>
-                <tfoot><tr id="rptSupplierTotalRow"></tr></tfoot>
-              </table>
+          <!-- Section 2: Visual Analysis -->
+          <div class="dash-section">
+            <h3 class="section-heading"><span class="section-icon">📈</span> Visual Analysis</h3>
+            <div class="charts-row">
+              <div class="chart-card"><h3>Revenue vs Cost Overview</h3><canvas id="chartRptRevCost"></canvas></div>
+              <div class="chart-card"><h3>Cost Breakdown</h3><canvas id="chartRptCostBreak"></canvas></div>
+            </div>
+            <div class="charts-row">
+              <div class="chart-card"><h3>Daily Revenue Trend</h3><canvas id="chartRptDailyRev"></canvas></div>
+              <div class="chart-card"><h3>Expense Categories</h3><canvas id="chartRptExpCat"></canvas></div>
             </div>
           </div>
 
-          <!-- Sales Summary by Item -->
-          <div class="table-card" style="margin-bottom:20px">
-            <div class="table-header"><h3>Sales Summary — by Item</h3></div>
-            <div class="table-scroll">
-              <table id="rptSalesTable">
-                <thead><tr><th>Item</th><th>Category</th><th>Qty Sold</th><th>Unit</th><th>Total Amount (₹)</th><th>Avg Rate (₹)</th></tr></thead>
-                <tbody></tbody>
-                <tfoot><tr id="rptSalesTotalRow"></tr></tfoot>
-              </table>
+          <!-- Section 3: Purchase Analysis -->
+          <div class="dash-section">
+            <h3 class="section-heading"><span class="section-icon">🛍️</span> Purchase Analysis</h3>
+            <div class="table-card">
+              <div class="table-header"><h3>Purchases — by Item</h3></div>
+              <div class="table-scroll">
+                <table id="rptPurchaseTable"><thead><tr><th>Item</th><th>Brand</th><th>Supplier</th><th>Qty</th><th>Unit</th><th>Total Cost (₹)</th><th>Avg Rate (₹)</th></tr></thead><tbody></tbody><tfoot><tr id="rptPurchaseTotalRow"></tr></tfoot></table>
+              </div>
+            </div>
+            <div class="table-card">
+              <div class="table-header"><h3>Purchases — by Supplier</h3></div>
+              <div class="table-scroll">
+                <table id="rptSupplierTable"><thead><tr><th>Supplier</th><th>Items</th><th>Total Qty</th><th>Total Cost (₹)</th><th>% of Purchases</th></tr></thead><tbody></tbody><tfoot><tr id="rptSupplierTotalRow"></tr></tfoot></table>
+              </div>
             </div>
           </div>
 
-          <!-- Sales by Person -->
-          <div class="table-card" style="margin-bottom:20px">
-            <div class="table-header"><h3>Sales Summary — by Person</h3></div>
-            <div class="table-scroll">
-              <table id="rptPersonTable">
-                <thead><tr><th>Person</th><th>Transactions</th><th>Total Amount (₹)</th><th>% of Sales</th></tr></thead>
-                <tbody></tbody>
-                <tfoot><tr id="rptPersonTotalRow"></tr></tfoot>
-              </table>
+          <!-- Section 4: Sales Analysis -->
+          <div class="dash-section">
+            <h3 class="section-heading"><span class="section-icon">🛒</span> Sales Analysis</h3>
+            <div class="table-card">
+              <div class="table-header"><h3>Sales — by Item</h3></div>
+              <div class="table-scroll">
+                <table id="rptSalesTable"><thead><tr><th>Item</th><th>Category</th><th>Qty Sold</th><th>Unit</th><th>Total Amount (₹)</th><th>Avg Rate (₹)</th></tr></thead><tbody></tbody><tfoot><tr id="rptSalesTotalRow"></tr></tfoot></table>
+              </div>
+            </div>
+            <div class="charts-row">
+              <div class="table-card" style="margin-bottom:0">
+                <div class="table-header"><h3>Sales — by Person</h3></div>
+                <div class="table-scroll">
+                  <table id="rptPersonTable"><thead><tr><th>Person</th><th>Transactions</th><th>Amount (₹)</th><th>% Share</th></tr></thead><tbody></tbody><tfoot><tr id="rptPersonTotalRow"></tr></tfoot></table>
+                </div>
+              </div>
+              <div class="table-card" style="margin-bottom:0">
+                <div class="table-header"><h3>Sales — by Category</h3></div>
+                <div class="table-scroll">
+                  <table id="rptCategoryTable"><thead><tr><th>Category</th><th>Transactions</th><th>Amount (₹)</th><th>% Share</th></tr></thead><tbody></tbody><tfoot><tr id="rptCategoryTotalRow"></tr></tfoot></table>
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- Sales by Category -->
-          <div class="table-card" style="margin-bottom:20px">
-            <div class="table-header"><h3>Sales Summary — by Category</h3></div>
-            <div class="table-scroll">
-              <table id="rptCategoryTable">
-                <thead><tr><th>Category</th><th>Transactions</th><th>Total Amount (₹)</th><th>% of Sales</th></tr></thead>
-                <tbody></tbody>
-                <tfoot><tr id="rptCategoryTotalRow"></tr></tfoot>
-              </table>
+          <!-- Section 5: Expense Analysis -->
+          <div class="dash-section">
+            <h3 class="section-heading"><span class="section-icon">💳</span> Expense Analysis</h3>
+            <div class="table-card">
+              <div class="table-header"><h3>Expense Breakdown — by Category</h3></div>
+              <div class="table-scroll">
+                <table id="rptExpTable"><thead><tr><th>Category</th><th>Count</th><th>Total Amount (₹)</th><th>% of Expenses</th></tr></thead><tbody></tbody><tfoot><tr id="rptExpTotalRow"></tr></tfoot></table>
+              </div>
             </div>
           </div>
 
-          <!-- Expense Breakdown by Category -->
-          <div class="table-card" style="margin-bottom:20px">
-            <div class="table-header"><h3>Expense Breakdown — by Category</h3></div>
-            <div class="table-scroll">
-              <table id="rptExpTable">
-                <thead><tr><th>Category</th><th>Count</th><th>Total Amount (₹)</th><th>% of Expenses</th></tr></thead>
-                <tbody></tbody>
-                <tfoot><tr id="rptExpTotalRow"></tr></tfoot>
-              </table>
-            </div>
-          </div>
-
-          <!-- Daily Breakdown -->
-          <div class="table-card" style="margin-bottom:20px">
-            <div class="table-header"><h3>Day-wise Breakdown</h3></div>
-            <div class="table-scroll">
-              <table id="rptDailyTable">
-                <thead><tr><th>Date</th><th>Revenue (₹)</th><th>Purchases (₹)</th><th>Expenses (₹)</th><th>Total Cost (₹)</th><th>Net P&amp;L (₹)</th></tr></thead>
-                <tbody></tbody>
-                <tfoot><tr id="rptDailyTotalRow"></tr></tfoot>
-              </table>
+          <!-- Section 6: Day-wise Breakdown -->
+          <div class="dash-section">
+            <h3 class="section-heading"><span class="section-icon">📅</span> Day-wise Breakdown</h3>
+            <div class="table-card">
+              <div class="table-scroll">
+                <table id="rptDailyTable"><thead><tr><th>Date</th><th>Revenue (₹)</th><th>Purchases (₹)</th><th>Expenses (₹)</th><th>Total Cost (₹)</th><th>Net P&amp;L (₹)</th></tr></thead><tbody></tbody><tfoot><tr id="rptDailyTotalRow"></tr></tfoot></table>
+              </div>
             </div>
           </div>
 

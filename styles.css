@@ -212,6 +212,8 @@ input[readonly]{background:#e9ecef;cursor:default}
 @media(max-width:1024px){
   .charts-row{grid-template-columns:1fr}
   .pnl-summary-cards{grid-template-columns:1fr}
+  .kpi-primary{grid-template-columns:repeat(2,1fr)}
+  .kpi-secondary{grid-template-columns:repeat(2,1fr)}
 }
 @media(max-width:768px){
   .sidebar{transform:translateX(-100%)}
@@ -222,7 +224,41 @@ input[readonly]{background:#e9ecef;cursor:default}
   .form-grid{grid-template-columns:1fr}
   .top-bar{padding:0 16px}
   .stat-cards{grid-template-columns:1fr 1fr}
+  .kpi-primary{grid-template-columns:1fr 1fr}
+  .kpi-secondary{grid-template-columns:1fr 1fr}
+  .dash-header{flex-direction:column;align-items:flex-start;gap:12px}
+  .rpt-selector-row{flex-direction:column;align-items:stretch}
 }
 @media(max-width:480px){
   .stat-cards{grid-template-columns:1fr}
+  .kpi-primary{grid-template-columns:1fr}
+  .kpi-secondary{grid-template-columns:1fr}
 }
+
+/* ── Dashboard Redesign ──────────────────────────── */
+.dash-header{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:28px;flex-wrap:wrap;gap:16px;
+}
+.dash-title{font-size:1.5rem;font-weight:800;letter-spacing:-.3px;color:var(--text)}
+.dash-subtitle{font-size:.85rem;color:var(--text-light);margin-top:2px}
+.dash-section{margin-bottom:32px}
+.section-heading{
+  display:flex;align-items:center;gap:10px;
+  font-size:1.05rem;font-weight:700;color:var(--text);
+  margin-bottom:18px;padding-bottom:10px;
+  border-bottom:2px solid var(--border);
+}
+.section-icon{font-size:1.2rem;flex-shrink:0}
+.kpi-primary{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.kpi-secondary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px}
+
+/* ── Reports Redesign ────────────────────────────── */
+.rpt-controls{
+  background:var(--surface);border-radius:var(--radius);padding:20px 24px;
+  box-shadow:var(--shadow);margin-bottom:24px;
+}
+.rpt-selector-row{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+}
+.rpt-btn-group{display:flex;gap:10px;flex-wrap:wrap;margin-left:auto}
