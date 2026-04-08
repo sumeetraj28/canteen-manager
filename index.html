@@ -252,7 +252,7 @@
       <section class="page" id="page-items-in">
         <div class="form-card">
           <h3>Add Items In (Purchases / Stock In)</h3>
-          <form id="formItemsIn" autocomplete="off">
+          <form id="formItemsIn">
             <div class="form-grid">
               <div class="form-group">
                 <label for="inDate">Date</label>
@@ -301,7 +301,7 @@
                 <input type="text" id="inRemark" placeholder="Any notes" />
               </div>
             </div>
-            <button type="submit" class="btn-primary">+ Add Item In</button>
+            <button type="submit" class="btn-primary" id="inSubmitBtn">+ Add Item In</button>
           </form>
         </div>
         <div class="table-card">
@@ -389,7 +389,7 @@
       <section class="page" id="page-items-out">
         <div class="form-card">
           <h3>Add Items Out (Sales / Consumption)</h3>
-          <form id="formItemsOut" autocomplete="off">
+          <form id="formItemsOut">
             <div class="form-grid">
               <div class="form-group">
                 <label for="outDate">Date</label>
@@ -449,7 +449,7 @@
                 <input type="text" id="outCustomer" placeholder="Optional note" />
               </div>
             </div>
-            <button type="submit" class="btn-primary">+ Add Item Out</button>
+            <button type="submit" class="btn-primary" id="outSubmitBtn">+ Add Item Out</button>
           </form>
         </div>
         <div class="table-card">
@@ -616,7 +616,7 @@
       <section class="page" id="page-expenses">
         <div class="form-card">
           <h3>Add Other Expense</h3>
-          <form id="formExpenses" autocomplete="off">
+          <form id="formExpenses">
             <div class="form-grid">
               <div class="form-group">
                 <label for="expDate">Date</label>
@@ -645,7 +645,7 @@
                 <input type="text" id="expNote" placeholder="Brief description of the expense" />
               </div>
             </div>
-            <button type="submit" class="btn-primary">+ Add Expense</button>
+            <button type="submit" class="btn-primary" id="expSubmitBtn">+ Add Expense</button>
           </form>
         </div>
         <div class="table-card">
@@ -711,7 +711,7 @@
       <section class="page" id="page-sales">
         <div class="form-card">
           <h3>Add Sale</h3>
-          <form id="formSales" autocomplete="off">
+          <form id="formSales">
             <div class="form-grid">
               <div class="form-group">
                 <label for="saleDate">Date</label>
@@ -746,7 +746,7 @@
                 <input type="text" id="saleDetails" placeholder="Brief description of the sale" />
               </div>
             </div>
-            <button type="submit" class="btn-primary">+ Add Sale</button>
+            <button type="submit" class="btn-primary" id="saleSubmitBtn">+ Add Sale</button>
           </form>
         </div>
         <div class="table-card">

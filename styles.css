@@ -133,6 +133,11 @@ input[readonly]{background:#e9ecef;cursor:default}
   padding:5px 12px;border-radius:6px;font-size:.78rem;font-weight:500;transition:all .2s;
 }
 .btn-delete:hover{background:var(--red);color:#fff;border-color:var(--red)}
+.btn-edit{
+  background:transparent;border:1px solid var(--border);color:var(--primary);
+  padding:5px 12px;border-radius:6px;font-size:.78rem;font-weight:500;transition:all .2s;
+}
+.btn-edit:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
 
 /* ── P&L ─────────────────────────────────────────── */
 .pnl-controls{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px}

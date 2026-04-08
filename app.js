@@ -164,6 +164,67 @@
   $('#inQty').addEventListener('input', autoCalcCost);
   $('#inRate').addEventListener('input', autoCalcCost);
 
+  // ── Editing state ─────────────────────────────────
+  let editingInId = null, editingOutId = null, editingExpId = null, editingSaleId = null;
+
+  function cancelEdit(type) {
+    if (type === 'in')   { editingInId = null;   $('#formItemsIn').reset();  $('#inSubmitBtn').textContent = '+ Add Item In'; }
+    if (type === 'out')  { editingOutId = null;   $('#formItemsOut').reset(); $('#outSubmitBtn').textContent = '+ Add Item Out'; }
+    if (type === 'exp')  { editingExpId = null;   $('#formExpenses').reset(); $('#expSubmitBtn').textContent = '+ Add Expense'; }
+    if (type === 'sale') { editingSaleId = null;  $('#formSales').reset();    $('#saleSubmitBtn').textContent = '+ Add Sale'; }
+    $$('input[type="date"]').forEach(inp => inp.value = today());
+  }
+
+  // ── Edit handler (delegated) ──────────────────────
+  document.addEventListener('click', (e) => {
+    if (!e.target.classList.contains('btn-edit')) return;
+    const id = e.target.dataset.id;
+    const type = e.target.dataset.type;
+
+    if (type === 'in') {
+      const r = itemsIn.find(x => x.id === id);
+      if (!r) return;
+      editingInId = id;
+      $('#inDate').value = r.date; $('#inBillNo').value = r.billNo || ''; $('#inItem').value = r.item;
+      $('#inBrand').value = r.brand || ''; $('#inSupplier').value = r.supplier || '';
+      $('#inQty').value = r.qty; $('#inUnit').value = r.unit; $('#inRate').value = r.rate || 0;
+      $('#inPrice').value = r.cost; $('#inRemark').value = r.remark || '';
+      $('#inSubmitBtn').textContent = '✏️ Update Item In';
+      $('#page-items-in').scrollIntoView({ behavior: 'smooth' });
+    }
+    if (type === 'out') {
+      const r = itemsOut.find(x => x.id === id);
+      if (!r) return;
+      editingOutId = id;
+      $('#outDate').value = r.date; $('#outItem').value = r.item;
+      $('#outBrand').value = r.brand || ''; $('#outSupplier').value = r.supplier || '';
+      $('#outQty').value = r.qty; $('#outUnit').value = r.unit;
+      $('#outRate').value = r.rate || 0; $('#outPrice').value = r.amount;
+      $('#outCategory').value = r.category || 'Cooked'; $('#outPerson').value = r.person || 'Pradeep';
+      $('#outCustomer').value = r.customer || '';
+      $('#outSubmitBtn').textContent = '✏️ Update Item Out';
+      $('#page-items-out').scrollIntoView({ behavior: 'smooth' });
+    }
+    if (type === 'exp') {
+      const r = expenses.find(x => x.id === id);
+      if (!r) return;
+      editingExpId = id;
+      $('#expDate').value = r.date; $('#expCategory').value = r.category;
+      $('#expAmount').value = r.amount; $('#expNote').value = r.note || '';
+      $('#expSubmitBtn').textContent = '✏️ Update Expense';
+      $('#page-expenses').scrollIntoView({ behavior: 'smooth' });
+    }
+    if (type === 'sale') {
+      const r = sales.find(x => x.id === id);
+      if (!r) return;
+      editingSaleId = id;
+      $('#saleDate').value = r.date; $('#saleType').value = r.type;
+      $('#saleAmount').value = r.amount; $('#saleDetails').value = r.details || '';
+      $('#saleSubmitBtn').textContent = '✏️ Update Sale';
+      $('#page-sales').scrollIntoView({ behavior: 'smooth' });
+    }
+  });
+
   $('#formItemsIn').addEventListener('submit', (e) => {
     e.preventDefault();
     const qty = parseFloat($('#inQty').value);
@@ -182,11 +243,19 @@
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     };
     if (!record.item || !record.qty || !record.rate) return toast('Please fill all required fields', true);
-    colItemsIn.add(record).then(() => {
-      e.target.reset();
-      $$('input[type="date"]').forEach(inp => inp.value = today());
-      toast('Item added to stock');
-    }).catch(() => toast('Failed to save', true));
+    if (editingInId) {
+      colItemsIn.doc(editingInId).update(record).then(() => {
+        logAuthEvent(auth.currentUser?.email, 'Edited Purchase #' + editingInId.slice(0, 6));
+        cancelEdit('in');
+        toast('Record updated');
+      }).catch(() => toast('Failed to update', true));
+    } else {
+      colItemsIn.add(record).then(() => {
+        e.target.reset();
+        $$('input[type="date"]').forEach(inp => inp.value = today());
+        toast('Item added to stock');
+      }).catch(() => toast('Failed to save', true));
+    }
   });
 
   function getItemsInFilters() {
@@ -225,7 +294,7 @@
           <td>${r.qty}</td><td>${sanitize(r.unit)}</td>
           <td>${fmt(r.rate || 0)}</td><td>${fmt(r.cost)}</td>
           <td>${sanitize(r.remark || '—')}</td>
-          <td><button class="btn-delete" data-id="${sanitize(r.id)}" data-type="in">Delete</button></td>
+          <td><button class="btn-edit" data-id="${sanitize(r.id)}" data-type="in">Edit</button> <button class="btn-delete" data-id="${sanitize(r.id)}" data-type="in">Delete</button></td>
         </tr>`).join('');
     renderItemsInSummary();
   }
@@ -403,11 +472,19 @@
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     };
     if (!record.item || !record.qty || !record.amount) return toast('Please fill all required fields', true);
-    colItemsOut.add(record).then(() => {
-      e.target.reset();
-      $$('input[type="date"]').forEach(inp => inp.value = today());
-      toast('Sale recorded');
-    }).catch(() => toast('Failed to save', true));
+    if (editingOutId) {
+      colItemsOut.doc(editingOutId).update(record).then(() => {
+        logAuthEvent(auth.currentUser?.email, 'Edited Sale #' + editingOutId.slice(0, 6));
+        cancelEdit('out');
+        toast('Record updated');
+      }).catch(() => toast('Failed to update', true));
+    } else {
+      colItemsOut.add(record).then(() => {
+        e.target.reset();
+        $$('input[type="date"]').forEach(inp => inp.value = today());
+        toast('Sale recorded');
+      }).catch(() => toast('Failed to save', true));
+    }
   });
 
   function getItemsOutFilters() {
@@ -445,7 +522,7 @@
           <td>${fmt(r.rate || 0)}</td><td>${fmt(r.amount)}</td>
           <td>${sanitize(r.category || '—')}</td><td>${sanitize(r.person || '—')}</td>
           <td>${sanitize(r.customer || '—')}</td>
-          <td><button class="btn-delete" data-id="${sanitize(r.id)}" data-type="out">Delete</button></td>
+          <td><button class="btn-edit" data-id="${sanitize(r.id)}" data-type="out">Edit</button> <button class="btn-delete" data-id="${sanitize(r.id)}" data-type="out">Delete</button></td>
         </tr>`).join('');
     renderItemsOutSummary();
   }
@@ -652,11 +729,19 @@
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     };
     if (!record.amount) return toast('Please enter an amount', true);
-    colExpenses.add(record).then(() => {
-      e.target.reset();
-      $$('input[type="date"]').forEach(inp => inp.value = today());
-      toast('Expense recorded');
-    }).catch(() => toast('Failed to save', true));
+    if (editingExpId) {
+      colExpenses.doc(editingExpId).update(record).then(() => {
+        logAuthEvent(auth.currentUser?.email, 'Edited Expense #' + editingExpId.slice(0, 6));
+        cancelEdit('exp');
+        toast('Record updated');
+      }).catch(() => toast('Failed to update', true));
+    } else {
+      colExpenses.add(record).then(() => {
+        e.target.reset();
+        $$('input[type="date"]').forEach(inp => inp.value = today());
+        toast('Expense recorded');
+      }).catch(() => toast('Failed to save', true));
+    }
   });
 
   const EXP_CATEGORIES = ['Salary','Rent','Electricity','Gas','Water','Maintenance','Equipment','Transport','Miscellaneous'];
@@ -690,7 +775,7 @@
       : filtered.map(r => `<tr>
           <td>${sanitize(r.date)}</td><td>${sanitize(r.category)}</td><td>${fmt(r.amount)}</td>
           <td>${sanitize(r.note || '—')}</td>
-          <td><button class="btn-delete" data-id="${sanitize(r.id)}" data-type="exp">Delete</button></td>
+          <td><button class="btn-edit" data-id="${sanitize(r.id)}" data-type="exp">Edit</button> <button class="btn-delete" data-id="${sanitize(r.id)}" data-type="exp">Delete</button></td>
         </tr>`).join('');
 
     renderExpMonthly();
@@ -780,12 +865,16 @@
     if (!confirm('Delete this record?')) return;
     const id = e.target.dataset.id;
     const type = e.target.dataset.type;
+    const typeLabels = { in: 'Purchase', out: 'Sale', exp: 'Expense', sale: 'Sale Record' };
     let promise;
     if (type === 'in')  promise = colItemsIn.doc(id).delete();
     if (type === 'out') promise = colItemsOut.doc(id).delete();
     if (type === 'exp') promise = colExpenses.doc(id).delete();
     if (type === 'sale') promise = colSales.doc(id).delete();
-    if (promise) promise.then(() => toast('Record deleted')).catch(() => toast('Failed to delete', true));
+    if (promise) promise.then(() => {
+      toast('Record deleted');
+      logAuthEvent(auth.currentUser?.email, 'Deleted ' + (typeLabels[type] || type) + ' #' + id.slice(0, 6));
+    }).catch(() => toast('Failed to delete', true));
   });
 
   // ── Inventory ─────────────────────────────────────
@@ -826,7 +915,8 @@
 
   function renderInventory() {
     const f = getInvFilters();
-    let data = buildInventory().filter(i => {
+    const allData = buildInventory();
+    let data = allData.filter(i => {
       if (f.item && !i.name.toLowerCase().includes(f.item)) return false;
       if (f.brand && !i.brand.toLowerCase().includes(f.brand)) return false;
       if (f.supplier && !i.supplier.toLowerCase().includes(f.supplier)) return false;
@@ -858,8 +948,7 @@
           </tr>`;
         }).join('');
 
-    // Count low stock from unfiltered data for accurate stats
-    const allData = buildInventory();
+    // Stats from unfiltered data
     $('#invTotalItems').textContent = allData.length;
     $('#invLowStock').textContent = allData.filter(i => i.status === 'Low').length;
     const totalVal = allData.reduce((s, i) => s + i.value, 0);
@@ -922,11 +1011,19 @@
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     };
     if (!record.amount) return toast('Please enter an amount', true);
-    colSales.add(record).then(() => {
-      e.target.reset();
-      $$('input[type="date"]').forEach(inp => inp.value = today());
-      toast('Sale recorded');
-    }).catch(() => toast('Failed to save', true));
+    if (editingSaleId) {
+      colSales.doc(editingSaleId).update(record).then(() => {
+        logAuthEvent(auth.currentUser?.email, 'Edited Sale Record #' + editingSaleId.slice(0, 6));
+        cancelEdit('sale');
+        toast('Record updated');
+      }).catch(() => toast('Failed to update', true));
+    } else {
+      colSales.add(record).then(() => {
+        e.target.reset();
+        $$('input[type="date"]').forEach(inp => inp.value = today());
+        toast('Sale recorded');
+      }).catch(() => toast('Failed to save', true));
+    }
   });
 
   function getSalesFilters() {
@@ -958,7 +1055,7 @@
       : filtered.map(r => `<tr>
           <td>${sanitize(r.date)}</td><td>${sanitize(r.type)}</td><td>${fmt(r.amount)}</td>
           <td>${sanitize(r.details || '—')}</td>
-          <td><button class="btn-delete" data-id="${sanitize(r.id)}" data-type="sale">Delete</button></td>
+          <td><button class="btn-edit" data-id="${sanitize(r.id)}" data-type="sale">Edit</button> <button class="btn-delete" data-id="${sanitize(r.id)}" data-type="sale">Delete</button></td>
         </tr>`).join('');
     renderSalesSummary();
   }
@@ -1894,6 +1991,9 @@
   $('#btnExportPdf').addEventListener('click', async () => {
     const output = $('#reportOutput');
     if (output.style.display === 'none') return toast('Generate a report first', true);
+    const pdfBtn = $('#btnExportPdf');
+    pdfBtn.disabled = true;
+    pdfBtn.textContent = '⏳ Generating…';
     toast('Generating PDF…');
     try {
       const canvas = await html2canvas(output, { scale: 2, useCORS: true, logging: false });
@@ -1926,6 +2026,9 @@
     } catch (err) {
       console.error(err);
       toast('PDF generation failed', true);
+    } finally {
+      pdfBtn.disabled = false;
+      pdfBtn.textContent = '📄 Download PDF';
     }
   });
 
