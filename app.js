@@ -2281,15 +2281,17 @@
     if (action.startsWith('Deleted')) return 'delete';
     if (action.startsWith('Exported')) return 'export';
     if (action.startsWith('Downloaded')) return 'download';
+    if (action.startsWith('Imported')) return 'import';
+    if (action.startsWith('Erased')) return 'erase';
     return 'other';
   }
 
-  const categoryLabels = { login: '🔑 Login/Logout', edit: '✏️ Edit', delete: '🗑️ Delete', export: '📤 Export', download: '📄 Download', other: '❓ Other' };
-  const categoryBadgeClass = { login: 'status-ok', edit: 'badge-edit', delete: 'status-out', export: 'badge-export', download: 'badge-download', other: 'status-low' };
+  const categoryLabels = { login: '🔑 Login/Logout', edit: '✏️ Edit', delete: '🗑️ Delete', export: '📤 Export', download: '📄 Download', import: '📥 Import', erase: '🧹 Erase', other: '❓ Other' };
+  const categoryBadgeClass = { login: 'status-ok', edit: 'badge-edit', delete: 'status-out', export: 'badge-export', download: 'badge-download', import: 'badge-import', erase: 'badge-erase', other: 'status-low' };
 
   function renderAuthLog() {
     // Classify and count
-    const counts = { total: authLogs.length, login: 0, edit: 0, delete: 0, export: 0, download: 0 };
+    const counts = { total: authLogs.length, login: 0, edit: 0, delete: 0, export: 0, download: 0, import: 0, erase: 0 };
     authLogs.forEach(r => { const c = classifyAction(r.action); if (counts[c] !== undefined) counts[c]++; });
     const s = id => document.getElementById(id);
     s('statTotalActions').textContent = counts.total;
@@ -2298,6 +2300,8 @@
     s('statDeletes').textContent = counts.delete;
     s('statExports').textContent = counts.export;
     s('statDownloads').textContent = counts.download;
+    s('statImports').textContent = counts.import;
+    s('statErases').textContent = counts.erase;
 
     // Apply filters
     const catFilter = $('#filterLogCategory').value;

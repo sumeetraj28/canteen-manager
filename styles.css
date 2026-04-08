@@ -186,6 +186,8 @@ input[readonly]{background:#e9ecef;cursor:default}
 .badge-edit{background:var(--orange-bg);color:#b45309}
 .badge-export{background:var(--blue-bg);color:#1d4ed8}
 .badge-download{background:#f5f3ff;color:#7c3aed}
+.badge-import{background:#ecfdf5;color:#047857}
+.badge-erase{background:#fef2f2;color:#b91c1c}
 
 /* ── Toast ────────────────────────────────────────── */
 .toast{
