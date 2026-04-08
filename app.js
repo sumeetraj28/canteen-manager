@@ -84,6 +84,7 @@
   const colExpenses = db.collection('expenses');
   const colSales    = db.collection('sales');
   const colAuthLogs  = db.collection('authLogs');
+  const colBillCounters = db.collection('billCounters');
 
   // ── Toast ─────────────────────────────────────────
   function toast(msg, isError) {
@@ -1220,6 +1221,34 @@
   });
 
   // ── Bill Generator ────────────────────────────────
+  // Bill number helpers
+  function billFY() {
+    const now = new Date();
+    const y = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+    return y + '-' + String(y + 1).slice(2);
+  }
+  function billMonth() { return String(new Date().getMonth() + 1).padStart(2, '0'); }
+
+  async function nextBillNo(prefix) {
+    const fy = billFY();
+    const mm = billMonth();
+    const docId = prefix + '_' + fy + '_' + mm;
+    const ref = colBillCounters.doc(docId);
+    let num = 1;
+    try {
+      await db.runTransaction(async (tx) => {
+        const snap = await tx.get(ref);
+        num = snap.exists ? (snap.data().last || 0) + 1 : 1;
+        tx.set(ref, { last: num, prefix, fy, month: mm });
+      });
+    } catch (err) {
+      console.error('Bill counter error:', err);
+      // Fallback: timestamp-based
+      num = Date.now() % 10000;
+    }
+    return 'FC/' + prefix + '/' + fy + '/' + mm + '/' + String(num).padStart(3, '0');
+  }
+
   // Toggle between Customer Bill and Expense Bill forms
   $('#billType').addEventListener('change', () => {
     const isCustomer = $('#billType').value === 'customer';
@@ -1449,25 +1478,36 @@
   }
 
   // Customer bill buttons
-  $('#cbPreview').addEventListener('click', () => showBillPreview(buildCustomerBillHTML()));
-  $('#cbDownloadPdf').addEventListener('click', () => {
+  async function ensureCbBillNo() {
+    if (!$('#cbBillNo').value) $('#cbBillNo').value = await nextBillNo('CB');
+  }
+  $('#cbPreview').addEventListener('click', async () => { await ensureCbBillNo(); showBillPreview(buildCustomerBillHTML()); });
+  $('#cbDownloadPdf').addEventListener('click', async () => {
+    await ensureCbBillNo();
     const no = $('#cbBillNo').value.trim() || 'CustomerBill';
-    downloadBillPdf(buildCustomerBillHTML(), 'RTCIT_' + no.replace(/[^a-zA-Z0-9-_]/g, ''));
+    downloadBillPdf(buildCustomerBillHTML(), 'RTCIT_' + no.replace(/[^a-zA-Z0-9-_]/g, '_'));
   });
-  $('#cbPrint').addEventListener('click', () => printBill(buildCustomerBillHTML()));
+  $('#cbPrint').addEventListener('click', async () => { await ensureCbBillNo(); printBill(buildCustomerBillHTML()); });
 
   // Expense bill buttons
-  $('#ebPreview').addEventListener('click', () => showBillPreview(buildExpenseBillHTML()));
-  $('#ebDownloadPdf').addEventListener('click', () => {
+  async function ensureEbBillNo() {
+    if (!$('#ebBillNo').value) $('#ebBillNo').value = await nextBillNo('GE');
+  }
+  $('#ebPreview').addEventListener('click', async () => { await ensureEbBillNo(); showBillPreview(buildExpenseBillHTML()); });
+  $('#ebDownloadPdf').addEventListener('click', async () => {
+    await ensureEbBillNo();
     const no = $('#ebBillNo').value.trim() || 'ExpenseBill';
-    downloadBillPdf(buildExpenseBillHTML(), 'RTCIT_' + no.replace(/[^a-zA-Z0-9-_]/g, ''));
+    downloadBillPdf(buildExpenseBillHTML(), 'RTCIT_' + no.replace(/[^a-zA-Z0-9-_]/g, '_'));
   });
-  $('#ebPrint').addEventListener('click', () => printBill(buildExpenseBillHTML()));
+  $('#ebPrint').addEventListener('click', async () => { await ensureEbBillNo(); printBill(buildExpenseBillHTML()); });
 
-  function renderBillGenerator() {
+  async function renderBillGenerator() {
     // Set default dates if empty
     if (!$('#cbDate').value) $('#cbDate').value = today();
     if (!$('#ebDate').value) $('#ebDate').value = today();
+    // Auto-assign next bill numbers
+    if (!$('#cbBillNo').value) $('#cbBillNo').value = await nextBillNo('CB');
+    if (!$('#ebBillNo').value) $('#ebBillNo').value = await nextBillNo('GE');
   }
 
   // ── P&L Computation (Financial Year: Apr–Mar) ────
