@@ -389,3 +389,37 @@ input[readonly]{background:#e9ecef;cursor:default}
   display:flex;align-items:center;gap:14px;flex-wrap:wrap;
 }
 .rpt-btn-group{display:flex;gap:10px;flex-wrap:wrap;margin-left:auto}
+
+/* ── Import Modal ────────────────────────────────── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;
+  align-items:center;justify-content:center;z-index:10000;padding:16px;
+}
+.modal-overlay.active{display:flex}
+.modal-card{
+  background:var(--surface);border-radius:var(--radius);width:100%;max-width:600px;
+  max-height:90vh;display:flex;flex-direction:column;box-shadow:var(--shadow-lg);
+}
+.modal-header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:20px 24px;border-bottom:1px solid var(--border);
+}
+.modal-header h3{font-size:1rem;font-weight:700}
+.modal-close{
+  background:none;border:none;font-size:1.5rem;color:var(--text-light);
+  line-height:1;padding:0 4px;cursor:pointer;transition:color .2s;
+}
+.modal-close:hover{color:var(--text)}
+.modal-body{padding:20px 24px;overflow-y:auto}
+.import-dropzone{
+  border:2px dashed var(--border);border-radius:var(--radius);
+  padding:32px 20px;text-align:center;cursor:pointer;transition:all .2s;
+}
+.import-dropzone:hover,.import-dropzone.dragover{
+  border-color:var(--primary);background:rgba(99,102,241,.04);
+}
+.dropzone-content p{margin-top:6px;font-size:.88rem;color:var(--text)}
+@media(max-width:480px){
+  .modal-card{max-width:100%}
+  .modal-header,.modal-body{padding:14px 16px}
+}

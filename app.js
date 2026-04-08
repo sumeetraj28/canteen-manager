@@ -2294,6 +2294,288 @@
     logAuthEvent(auth.currentUser?.email, 'Exported Monthly Expenses XLSX');
   });
 
+  // ── Data Import ───────────────────────────────────
+  const importConfigs = {
+    itemsIn: {
+      title: 'Import Items In (Purchases)',
+      collection: colItemsIn,
+      columns: ['Date', 'Bill No', 'Item', 'Brand', 'Supplier', 'Qty', 'Unit', 'Rate', 'Remark'],
+      sampleRows: [
+        ['2026-04-01', 'INV-001', 'Aata', 'Fortune', 'Balaji Bhandar', 10, 'kg', 45, 'Regular flour'],
+        ['2026-04-02', 'INV-002', 'Refine Oil', 'Fortune', 'Sabzi Market', 5, 'ltr', 160, '']
+      ],
+      parse(row) {
+        const qty = parseFloat(row['Qty']) || 0;
+        const rate = parseFloat(row['Rate']) || 0;
+        return {
+          date: formatDateVal(row['Date']),
+          billNo: String(row['Bill No'] || '').trim(),
+          item: String(row['Item'] || '').trim(),
+          brand: String(row['Brand'] || '').trim(),
+          supplier: String(row['Supplier'] || '').trim(),
+          qty, unit: String(row['Unit'] || 'kg').trim(),
+          rate, cost: qty * rate,
+          remark: String(row['Remark'] || '').trim(),
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+      },
+      validate(r) { return r.date && r.item && r.qty > 0; }
+    },
+    itemsOut: {
+      title: 'Import Items Out (Sales)',
+      collection: colItemsOut,
+      columns: ['Date', 'Item', 'Brand', 'Supplier', 'Qty', 'Unit', 'Rate', 'Amount', 'Category', 'Person', 'Remark'],
+      sampleRows: [
+        ['2026-04-01', 'Chai', '', '', 50, 'cup', 10, 500, 'Cooked', 'Pradeep', ''],
+        ['2026-04-02', 'Samosa', '', '', 30, 'pcs', 15, 450, 'Cooked', 'Tulesh', 'Evening batch']
+      ],
+      parse(row) {
+        return {
+          date: formatDateVal(row['Date']),
+          item: String(row['Item'] || '').trim(),
+          brand: String(row['Brand'] || '').trim(),
+          supplier: String(row['Supplier'] || '').trim(),
+          qty: parseFloat(row['Qty']) || 0,
+          unit: String(row['Unit'] || 'pcs').trim(),
+          rate: parseFloat(row['Rate']) || 0,
+          amount: parseFloat(row['Amount']) || 0,
+          category: String(row['Category'] || '').trim(),
+          person: String(row['Person'] || '').trim(),
+          customer: String(row['Remark'] || '').trim(),
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+      },
+      validate(r) { return r.date && r.item && r.qty > 0; }
+    },
+    expenses: {
+      title: 'Import Other Expenses',
+      collection: colExpenses,
+      columns: ['Date', 'Category', 'Amount', 'Description'],
+      sampleRows: [
+        ['2026-04-01', 'Salary', 15000, 'Cook salary - April'],
+        ['2026-04-05', 'Electricity', 3500, 'Monthly bill']
+      ],
+      parse(row) {
+        return {
+          date: formatDateVal(row['Date']),
+          category: String(row['Category'] || '').trim(),
+          amount: parseFloat(row['Amount']) || 0,
+          note: String(row['Description'] || '').trim(),
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+      },
+      validate(r) { return r.date && r.category && r.amount > 0; }
+    },
+    sales: {
+      title: 'Import Sales',
+      collection: colSales,
+      columns: ['Date', 'Sale Type', 'Amount', 'Details'],
+      sampleRows: [
+        ['2026-04-01', 'Cash Sales', 2500, 'Daily cash counter'],
+        ['2026-04-01', 'Online Sales', 1200, 'UPI payments']
+      ],
+      parse(row) {
+        return {
+          date: formatDateVal(row['Date']),
+          type: String(row['Sale Type'] || '').trim(),
+          amount: parseFloat(row['Amount']) || 0,
+          details: String(row['Details'] || '').trim(),
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+      },
+      validate(r) { return r.date && r.type && r.amount > 0; }
+    }
+  };
+
+  function formatDateVal(v) {
+    if (!v) return '';
+    if (typeof v === 'number') {
+      // Excel serial date number
+      const d = new Date((v - 25569) * 86400000);
+      return d.toISOString().slice(0, 10);
+    }
+    const s = String(v).trim();
+    // Already yyyy-mm-dd
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    // dd/mm/yyyy or dd-mm-yyyy
+    const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if (m) return m[3] + '-' + m[2].padStart(2, '0') + '-' + m[1].padStart(2, '0');
+    // Try Date parse
+    const d = new Date(s);
+    return isNaN(d) ? '' : d.toISOString().slice(0, 10);
+  }
+
+  let activeImportType = null;
+  let parsedImportRows = [];
+  const importModal = $('#importModal');
+  const importFileInput = $('#importFileInput');
+  const importDropzone = $('#importDropzone');
+
+  function openImportModal(type) {
+    activeImportType = type;
+    const cfg = importConfigs[type];
+    $('#importModalTitle').textContent = cfg.title;
+    $('#importPreview').style.display = 'none';
+    importFileInput.value = '';
+    parsedImportRows = [];
+    importModal.classList.add('active');
+  }
+
+  function closeImportModal() {
+    importModal.classList.remove('active');
+    activeImportType = null;
+    parsedImportRows = [];
+  }
+
+  $('#importModalClose').addEventListener('click', closeImportModal);
+  importModal.addEventListener('click', (e) => { if (e.target === importModal) closeImportModal(); });
+  $('#btnCancelImport').addEventListener('click', () => {
+    $('#importPreview').style.display = 'none';
+    importFileInput.value = '';
+    parsedImportRows = [];
+  });
+
+  // Download sample template
+  $('#btnDownloadSample').addEventListener('click', () => {
+    if (!activeImportType) return;
+    const cfg = importConfigs[activeImportType];
+    const data = [cfg.columns, ...cfg.sampleRows];
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    // Set column widths
+    ws['!cols'] = cfg.columns.map(() => ({ wch: 18 }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Template');
+    XLSX.writeFile(wb, 'import_template_' + activeImportType + '.xlsx');
+  });
+
+  // Open import modals
+  $('#btnImportItemsIn').addEventListener('click', () => openImportModal('itemsIn'));
+  $('#btnImportItemsOut').addEventListener('click', () => openImportModal('itemsOut'));
+  $('#btnImportExpenses').addEventListener('click', () => openImportModal('expenses'));
+  $('#btnImportSales').addEventListener('click', () => openImportModal('sales'));
+
+  // File handling
+  importDropzone.addEventListener('click', () => importFileInput.click());
+  importDropzone.addEventListener('dragover', (e) => { e.preventDefault(); importDropzone.classList.add('dragover'); });
+  importDropzone.addEventListener('dragleave', () => importDropzone.classList.remove('dragover'));
+  importDropzone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    importDropzone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) processImportFile(file);
+  });
+  importFileInput.addEventListener('change', () => {
+    if (importFileInput.files[0]) processImportFile(importFileInput.files[0]);
+  });
+
+  function processImportFile(file) {
+    if (!activeImportType) return;
+    const cfg = importConfigs[activeImportType];
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const wb = XLSX.read(e.target.result, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const jsonRows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+        if (!jsonRows.length) return toast('No data rows found in file', true);
+
+        // Validate column headers
+        const fileHeaders = Object.keys(jsonRows[0]);
+        const missing = cfg.columns.filter(c => !fileHeaders.includes(c));
+        if (missing.length) {
+          toast('Missing columns: ' + missing.join(', '), true);
+          return;
+        }
+
+        // Parse and validate
+        parsedImportRows = [];
+        const invalid = [];
+        jsonRows.forEach((row, i) => {
+          const parsed = cfg.parse(row);
+          if (cfg.validate(parsed)) {
+            parsedImportRows.push(parsed);
+          } else {
+            invalid.push(i + 2); // +2 for header row + 0-index
+          }
+        });
+
+        if (!parsedImportRows.length) {
+          toast('No valid rows found. Check your data format.', true);
+          return;
+        }
+
+        // Show preview
+        $('#importRowCount').textContent = parsedImportRows.length +
+          (invalid.length ? ' (' + invalid.length + ' skipped)' : '');
+        $('#importConfirmCount').textContent = parsedImportRows.length;
+
+        const thead = $('#importPreviewTable thead');
+        const tbody = $('#importPreviewTable tbody');
+        thead.innerHTML = '<tr>' + cfg.columns.map(c => '<th>' + sanitize(c) + '</th>').join('') + '</tr>';
+
+        const previewRows = parsedImportRows.slice(0, 10);
+        tbody.innerHTML = previewRows.map(r => {
+          const vals = cfg.columns.map(c => {
+            // Map column name back to parsed field
+            const key = colToKey(c, activeImportType);
+            return sanitize(String(r[key] ?? ''));
+          });
+          return '<tr>' + vals.map(v => '<td>' + v + '</td>').join('') + '</tr>';
+        }).join('') + (parsedImportRows.length > 10 ? '<tr><td colspan="' + cfg.columns.length + '" style="text-align:center;color:var(--text-light)">… and ' + (parsedImportRows.length - 10) + ' more rows</td></tr>' : '');
+
+        $('#importPreview').style.display = '';
+        if (invalid.length) toast(invalid.length + ' rows skipped (invalid data)', true);
+      } catch (err) {
+        console.error(err);
+        toast('Error reading file: ' + err.message, true);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function colToKey(col, type) {
+    const maps = {
+      itemsIn: { 'Date':'date','Bill No':'billNo','Item':'item','Brand':'brand','Supplier':'supplier','Qty':'qty','Unit':'unit','Rate':'rate','Remark':'remark' },
+      itemsOut: { 'Date':'date','Item':'item','Brand':'brand','Supplier':'supplier','Qty':'qty','Unit':'unit','Rate':'rate','Amount':'amount','Category':'category','Person':'person','Remark':'customer' },
+      expenses: { 'Date':'date','Category':'category','Amount':'amount','Description':'note' },
+      sales: { 'Date':'date','Sale Type':'type','Amount':'amount','Details':'details' }
+    };
+    return maps[type]?.[col] || col.toLowerCase();
+  }
+
+  // Confirm import — batch write to Firestore
+  $('#btnConfirmImport').addEventListener('click', async () => {
+    if (!activeImportType || !parsedImportRows.length) return;
+    const cfg = importConfigs[activeImportType];
+    const btn = $('#btnConfirmImport');
+    btn.disabled = true;
+    btn.textContent = '⏳ Importing…';
+    try {
+      // Firestore batch limit is 500
+      const chunks = [];
+      for (let i = 0; i < parsedImportRows.length; i += 400) {
+        chunks.push(parsedImportRows.slice(i, i + 400));
+      }
+      for (const chunk of chunks) {
+        const batch = db.batch();
+        chunk.forEach(row => {
+          const ref = cfg.collection.doc();
+          batch.set(ref, row);
+        });
+        await batch.commit();
+      }
+      toast('✅ Imported ' + parsedImportRows.length + ' records successfully');
+      logAuthEvent(auth.currentUser?.email, 'Imported ' + parsedImportRows.length + ' ' + cfg.title.replace('Import ', '') + ' records');
+      closeImportModal();
+    } catch (err) {
+      console.error(err);
+      toast('Import failed: ' + err.message, true);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '✅ Import ' + (parsedImportRows.length || 0) + ' rows';
+    }
+  });
+
   // ── Bind sort headers ─────────────────────────────
   bindSortHeaders('tableItemsIn', renderItemsIn);
   bindSortHeaders('tableItemsOut', renderItemsOut);

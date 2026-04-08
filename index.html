@@ -314,7 +314,10 @@
         <div class="table-card">
           <div class="table-header">
             <h3>Purchase History</h3>
-            <button class="btn-secondary btn-sm" id="btnExportItemsIn">Export .xlsx</button>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn-secondary btn-sm" id="btnImportItemsIn">📥 Import .xlsx</button>
+              <button class="btn-secondary btn-sm" id="btnExportItemsIn">Export .xlsx</button>
+            </div>
           </div>
           <div class="filter-row" id="filtersItemsIn">
             <input type="date" id="filterInDateFrom" class="filter-input" title="From date" />
@@ -462,7 +465,10 @@
         <div class="table-card">
           <div class="table-header">
             <h3>Sales History</h3>
-            <button class="btn-secondary btn-sm" id="btnExportItemsOut">Export .xlsx</button>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn-secondary btn-sm" id="btnImportItemsOut">📥 Import .xlsx</button>
+              <button class="btn-secondary btn-sm" id="btnExportItemsOut">Export .xlsx</button>
+            </div>
           </div>
           <div class="filter-row" id="filtersItemsOut">
             <input type="date" id="filterOutDateFrom" class="filter-input" title="From date" />
@@ -659,6 +665,7 @@
           <div class="table-header">
             <h3>Expense Records</h3>
             <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn-secondary btn-sm" id="btnImportExpenses">📥 Import .xlsx</button>
               <button class="btn-secondary btn-sm" id="btnExportExpenses">Export .xlsx</button>
               <button class="btn-sm" id="clearFiltersExp">Clear Filters</button>
             </div>
@@ -760,6 +767,7 @@
           <div class="table-header">
             <h3>Sales Records</h3>
             <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn-secondary btn-sm" id="btnImportSales">📥 Import .xlsx</button>
               <button class="btn-secondary btn-sm" id="btnExportSales">Export .xlsx</button>
               <button class="btn-sm" id="clearFiltersSales">Clear Filters</button>
             </div>
@@ -1152,6 +1160,38 @@
       </section>
     </div>
   </main>
+
+  <!-- Import Modal -->
+  <div class="modal-overlay" id="importModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="importModalTitle">Import Data</h3>
+        <button class="modal-close" id="importModalClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom:12px;font-size:.88rem;color:var(--text-light)">Upload an Excel file (.xlsx) to bulk-import records. The file must match the expected column format.</p>
+        <button class="btn-secondary btn-sm" id="btnDownloadSample" style="margin-bottom:16px">📄 Download Sample Template</button>
+        <div class="import-dropzone" id="importDropzone">
+          <input type="file" id="importFileInput" accept=".xlsx,.xls" style="display:none" />
+          <div class="dropzone-content">
+            <span style="font-size:2rem">📂</span>
+            <p>Drag & drop your .xlsx file here</p>
+            <p style="font-size:.78rem;color:var(--text-light)">or click to browse</p>
+          </div>
+        </div>
+        <div id="importPreview" style="display:none;margin-top:16px">
+          <p style="font-weight:600;margin-bottom:8px"><span id="importRowCount">0</span> rows found</p>
+          <div class="table-wrapper" style="max-height:240px;overflow-y:auto">
+            <table id="importPreviewTable"><thead></thead><tbody></tbody></table>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+            <button class="btn-secondary btn-sm" id="btnCancelImport">Cancel</button>
+            <button class="btn-primary btn-sm" id="btnConfirmImport">✅ Import <span id="importConfirmCount">0</span> rows</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Toast notification -->
   <div class="toast" id="toast"></div>
