@@ -96,7 +96,7 @@
   // ── Navigation ────────────────────────────────────
   const navItems = $$('.nav-item');
   const pages = $$('.page');
-  const titles = { dashboard:'Dashboard', 'items-in':'Items In', 'items-out':'Items Out', inventory:'Inventory', expenses:'Other Expenses', sales:'Sales', changelog:'Changelog' };
+  const titles = { dashboard:'Dashboard', 'items-in':'Items In', 'items-out':'Items Out', inventory:'Inventory', expenses:'Other Expenses', sales:'Sales', reports:'Reports', changelog:'Changelog' };
 
   function navigate(page) {
     navItems.forEach(n => n.classList.toggle('active', n.dataset.page === page));
@@ -108,6 +108,7 @@
     if (page === 'inventory') renderInventory();
     if (page === 'expenses')  renderExpenses();
     if (page === 'sales')     renderSales();
+    if (page === 'reports')   renderReport();
     if (page === 'changelog') renderAuthLog();
     $('#sidebar').classList.remove('open');
   }
@@ -149,6 +150,7 @@
     if (activePage === 'inventory') renderInventory();
     if (activePage === 'expenses')  renderExpenses();
     if (activePage === 'sales')     renderSales();
+    if (activePage === 'reports')   renderReport();
     if (activePage === 'changelog') renderAuthLog();
   }
 
@@ -1583,6 +1585,327 @@
   }
 
   $('#dashFY').addEventListener('change', drawDashboard);
+
+  // ── Reports ─────────────────────────────────────
+  let rptCharts = [];
+
+  function getReportDateRange() {
+    const period = $('#rptPeriod').value;
+    const now = new Date();
+    let from, to;
+
+    switch (period) {
+      case 'this-week': {
+        const day = now.getDay() || 7; // Mon=1
+        from = new Date(now); from.setDate(now.getDate() - day + 1); // Monday
+        to = new Date(from); to.setDate(from.getDate() + 6);
+        break;
+      }
+      case 'last-week': {
+        const day = now.getDay() || 7;
+        to = new Date(now); to.setDate(now.getDate() - day); // last Sunday
+        from = new Date(to); from.setDate(to.getDate() - 6);
+        break;
+      }
+      case 'this-month':
+        from = new Date(now.getFullYear(), now.getMonth(), 1);
+        to = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        break;
+      case 'last-month':
+        from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        to = new Date(now.getFullYear(), now.getMonth(), 0);
+        break;
+      case 'this-fy': {
+        const fy = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+        from = new Date(fy, 3, 1);
+        to = new Date(fy + 1, 2, 31);
+        break;
+      }
+      case 'last-fy': {
+        const fy = (now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1) - 1;
+        from = new Date(fy, 3, 1);
+        to = new Date(fy + 1, 2, 31);
+        break;
+      }
+      case 'custom':
+        from = $('#rptFrom').value ? new Date($('#rptFrom').value) : new Date(now.getFullYear(), now.getMonth(), 1);
+        to = $('#rptTo').value ? new Date($('#rptTo').value) : now;
+        break;
+    }
+    // Normalize to YYYY-MM-DD strings
+    const pad = d => d.toISOString().slice(0, 10);
+    return { from: pad(from), to: pad(to) };
+  }
+
+  function formatRange(from, to) {
+    const opts = { day: 'numeric', month: 'short', year: 'numeric' };
+    return new Date(from).toLocaleDateString('en-IN', opts) + '  →  ' + new Date(to).toLocaleDateString('en-IN', opts);
+  }
+
+  // Toggle custom date pickers
+  $('#rptPeriod').addEventListener('change', () => {
+    const show = $('#rptPeriod').value === 'custom';
+    $('#rptCustomFrom').style.display = show ? '' : 'none';
+    $('#rptCustomTo').style.display = show ? '' : 'none';
+  });
+
+  function renderReport() {
+    rptCharts.forEach(c => c.destroy());
+    rptCharts = [];
+
+    const { from, to } = getReportDateRange();
+    $('#rptPeriodLabel').textContent = 'Report period: ' + formatRange(from, to);
+
+    // Filter data within [from, to]
+    const inRange = r => r.date >= from && r.date <= to;
+    const fIn = itemsIn.filter(inRange);
+    const fOut = itemsOut.filter(inRange);
+    const fExp = expenses.filter(inRange);
+    const fSales = sales.filter(inRange);
+
+    const totalRev = fOut.reduce((s, r) => s + r.amount, 0);
+    const totalPurchases = fIn.reduce((s, r) => s + r.cost, 0);
+    const totalExp = fExp.reduce((s, r) => s + r.amount, 0);
+    const totalCost = totalPurchases + totalExp;
+    const net = totalRev - totalCost;
+    const margin = totalRev > 0 ? ((net / totalRev) * 100).toFixed(1) : '—';
+    const txnCount = fIn.length + fOut.length + fExp.length + fSales.length;
+    const activeDays = new Set([...fIn.map(r => r.date), ...fOut.map(r => r.date), ...fExp.map(r => r.date)]).size || 1;
+
+    // KPIs
+    $('#rptRevenue').textContent = fmt(totalRev);
+    $('#rptPurchases').textContent = fmt(totalPurchases);
+    $('#rptExpenses').textContent = fmt(totalExp);
+    $('#rptTotalCost').textContent = fmt(totalCost);
+    const netEl = $('#rptNet');
+    netEl.textContent = fmt(net);
+    netEl.className = 'stat-value ' + (net >= 0 ? 'profit' : 'loss');
+    const mgEl = $('#rptMargin');
+    mgEl.textContent = margin !== '—' ? margin + '%' : '—';
+    mgEl.className = 'stat-value ' + (net >= 0 ? 'profit' : 'loss');
+    $('#rptTxns').textContent = txnCount;
+    $('#rptDays').textContent = activeDays;
+    $('#rptAvgRev').textContent = fmt(totalRev / activeDays);
+    $('#rptAvgCost').textContent = fmt(totalCost / activeDays);
+
+    // ─── Chart 1: Revenue vs Cost bar ───
+    rptCharts.push(new Chart($('#chartRptRevCost'), {
+      type: 'bar',
+      data: {
+        labels: ['Revenue', 'Purchases', 'Other Expenses', 'Net P&L'],
+        datasets: [{
+          data: [totalRev, totalPurchases, totalExp, net],
+          backgroundColor: ['#22c55e', '#ef4444', '#f59e0b', net >= 0 ? '#6366f1' : '#dc2626'],
+          borderRadius: 6
+        }]
+      },
+      options: { responsive: true, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => fmt(ctx.raw) } } }, scales: { y: { ticks: { callback: v => '₹' + v.toLocaleString('en-IN') } } } }
+    }));
+
+    // ─── Chart 2: Cost Breakdown doughnut ───
+    rptCharts.push(new Chart($('#chartRptCostBreak'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Item Purchases', 'Other Expenses'],
+        datasets: [{ data: [totalPurchases, totalExp], backgroundColor: ['#ef4444', '#f59e0b'], borderWidth: 0, spacing: 4, borderRadius: 6 }]
+      },
+      options: { responsive: true, cutout: '60%', plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: ctx => ctx.label + ': ' + fmt(ctx.raw) } } } }
+    }));
+
+    // ─── Chart 3: Daily Revenue Trend ───
+    const dailyMap = {};
+    fOut.forEach(r => { dailyMap[r.date] = (dailyMap[r.date] || 0) + r.amount; });
+    const allDates = Object.keys(dailyMap).sort();
+    rptCharts.push(new Chart($('#chartRptDailyRev'), {
+      type: 'line',
+      data: {
+        labels: allDates.map(d => { const dt = new Date(d); return dt.getDate() + ' ' + dt.toLocaleString('en-IN', { month: 'short' }); }),
+        datasets: [{
+          label: 'Revenue', data: allDates.map(d => dailyMap[d]),
+          borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,.08)', fill: true,
+          tension: .4, pointRadius: 3, pointBackgroundColor: '#22c55e'
+        }]
+      },
+      options: { responsive: true, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => fmt(ctx.raw) } } }, scales: { y: { ticks: { callback: v => '₹' + v.toLocaleString('en-IN') } } } }
+    }));
+
+    // ─── Chart 4: Expense Categories pie ───
+    const expCatPie = {};
+    fExp.forEach(r => { const k = r.category || 'Other'; expCatPie[k] = (expCatPie[k] || 0) + r.amount; });
+    const pieColors = ['#6366f1','#22c55e','#ef4444','#f59e0b','#ec4899','#14b8a6','#8b5cf6','#f97316','#06b6d4','#84cc16'];
+    const ecLabels = Object.keys(expCatPie);
+    rptCharts.push(new Chart($('#chartRptExpCat'), {
+      type: 'doughnut',
+      data: {
+        labels: ecLabels,
+        datasets: [{ data: Object.values(expCatPie), backgroundColor: pieColors.slice(0, ecLabels.length), borderWidth: 0, spacing: 3 }]
+      },
+      options: { responsive: true, cutout: '55%', plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: ctx => ctx.label + ': ' + fmt(ctx.raw) } } } }
+    }));
+
+    // ─── Purchase Summary by Item ───
+    const purchMap = {};
+    fIn.forEach(r => {
+      const key = r.item.toLowerCase();
+      if (!purchMap[key]) purchMap[key] = { name: r.item, brand: r.brand || '', supplier: r.supplier || '', qty: 0, unit: r.unit, cost: 0 };
+      purchMap[key].qty += r.qty;
+      purchMap[key].cost += r.cost;
+      if (r.brand && !purchMap[key].brand) purchMap[key].brand = r.brand;
+      if (r.supplier && !purchMap[key].supplier) purchMap[key].supplier = r.supplier;
+    });
+    const purchRows = Object.values(purchMap).sort((a, b) => b.cost - a.cost);
+    const purchGrand = purchRows.reduce((s, r) => s + r.cost, 0);
+    const purchQtyGrand = purchRows.reduce((s, r) => s + r.qty, 0);
+    $('#rptPurchaseTable tbody').innerHTML = purchRows.length === 0
+      ? '<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:24px">No purchases</td></tr>'
+      : purchRows.map(r => `<tr><td>${sanitize(r.name)}</td><td>${sanitize(r.brand)}</td><td>${sanitize(r.supplier)}</td><td>${r.qty % 1 === 0 ? r.qty : r.qty.toFixed(2)}</td><td>${r.unit}</td><td>${fmt(r.cost)}</td><td>${r.qty > 0 ? fmt(r.cost / r.qty) : '—'}</td></tr>`).join('');
+    $('#rptPurchaseTotalRow').innerHTML = purchRows.length
+      ? `<td><strong>TOTAL</strong></td><td></td><td></td><td><strong>${purchQtyGrand % 1 === 0 ? purchQtyGrand : purchQtyGrand.toFixed(2)}</strong></td><td></td><td><strong>${fmt(purchGrand)}</strong></td><td></td>` : '';
+
+    // ─── Purchase Summary by Supplier ───
+    const suppMap = {};
+    fIn.forEach(r => {
+      const k = (r.supplier || 'Unknown').trim().toLowerCase();
+      if (!suppMap[k]) suppMap[k] = { name: r.supplier || 'Unknown', items: new Set(), qty: 0, cost: 0 };
+      suppMap[k].items.add(r.item.toLowerCase());
+      suppMap[k].qty += r.qty;
+      suppMap[k].cost += r.cost;
+    });
+    const suppRows = Object.values(suppMap).sort((a, b) => b.cost - a.cost);
+    const suppGrand = suppRows.reduce((s, r) => s + r.cost, 0);
+    $('#rptSupplierTable tbody').innerHTML = suppRows.length === 0
+      ? '<tr><td colspan="5" style="text-align:center;color:var(--text-light);padding:24px">No data</td></tr>'
+      : suppRows.map(r => {
+          const pct = suppGrand > 0 ? ((r.cost / suppGrand) * 100).toFixed(1) + '%' : '—';
+          return `<tr><td>${sanitize(r.name)}</td><td>${r.items.size}</td><td>${r.qty % 1 === 0 ? r.qty : r.qty.toFixed(2)}</td><td>${fmt(r.cost)}</td><td>${pct}</td></tr>`;
+        }).join('');
+    $('#rptSupplierTotalRow').innerHTML = suppGrand > 0
+      ? `<td><strong>TOTAL</strong></td><td></td><td></td><td><strong>${fmt(suppGrand)}</strong></td><td><strong>100%</strong></td>` : '';
+
+    // ─── Sales Summary by Item ───
+    const saleItemMap = {};
+    fOut.forEach(r => {
+      const key = r.item.toLowerCase();
+      if (!saleItemMap[key]) saleItemMap[key] = { name: r.item, category: r.category || '', qty: 0, unit: r.unit, amount: 0 };
+      saleItemMap[key].qty += r.qty;
+      saleItemMap[key].amount += r.amount;
+      if (r.category && !saleItemMap[key].category) saleItemMap[key].category = r.category;
+    });
+    const saleRows = Object.values(saleItemMap).sort((a, b) => b.amount - a.amount);
+    const saleGrand = saleRows.reduce((s, r) => s + r.amount, 0);
+    const saleQtyGrand = saleRows.reduce((s, r) => s + r.qty, 0);
+    $('#rptSalesTable tbody').innerHTML = saleRows.length === 0
+      ? '<tr><td colspan="6" style="text-align:center;color:var(--text-light);padding:24px">No sales</td></tr>'
+      : saleRows.map(r => `<tr><td>${sanitize(r.name)}</td><td>${sanitize(r.category)}</td><td>${r.qty % 1 === 0 ? r.qty : r.qty.toFixed(2)}</td><td>${r.unit}</td><td>${fmt(r.amount)}</td><td>${r.qty > 0 ? fmt(r.amount / r.qty) : '—'}</td></tr>`).join('');
+    $('#rptSalesTotalRow').innerHTML = saleGrand > 0
+      ? `<td><strong>TOTAL</strong></td><td></td><td><strong>${saleQtyGrand % 1 === 0 ? saleQtyGrand : saleQtyGrand.toFixed(2)}</strong></td><td></td><td><strong>${fmt(saleGrand)}</strong></td><td></td>` : '';
+
+    // ─── Sales by Person ───
+    const personMap = {};
+    fOut.forEach(r => {
+      const k = (r.person || 'Unknown').trim().toLowerCase();
+      if (!personMap[k]) personMap[k] = { name: r.person || 'Unknown', count: 0, amount: 0 };
+      personMap[k].count++;
+      personMap[k].amount += r.amount;
+    });
+    const personRows = Object.values(personMap).sort((a, b) => b.amount - a.amount);
+    const personGrand = personRows.reduce((s, r) => s + r.amount, 0);
+    $('#rptPersonTable tbody').innerHTML = personRows.length === 0
+      ? '<tr><td colspan="4" style="text-align:center;color:var(--text-light);padding:24px">No data</td></tr>'
+      : personRows.map(r => {
+          const pct = personGrand > 0 ? ((r.amount / personGrand) * 100).toFixed(1) + '%' : '—';
+          return `<tr><td>${sanitize(r.name)}</td><td>${r.count}</td><td>${fmt(r.amount)}</td><td>${pct}</td></tr>`;
+        }).join('');
+    $('#rptPersonTotalRow').innerHTML = personGrand > 0
+      ? `<td><strong>TOTAL</strong></td><td><strong>${personRows.reduce((s, r) => s + r.count, 0)}</strong></td><td><strong>${fmt(personGrand)}</strong></td><td><strong>100%</strong></td>` : '';
+
+    // ─── Sales by Category ───
+    const catMap = {};
+    fOut.forEach(r => {
+      const k = (r.category || 'Uncategorized').trim().toLowerCase();
+      if (!catMap[k]) catMap[k] = { name: r.category || 'Uncategorized', count: 0, amount: 0 };
+      catMap[k].count++;
+      catMap[k].amount += r.amount;
+    });
+    const catRows = Object.values(catMap).sort((a, b) => b.amount - a.amount);
+    const catGrand = catRows.reduce((s, r) => s + r.amount, 0);
+    $('#rptCategoryTable tbody').innerHTML = catRows.length === 0
+      ? '<tr><td colspan="4" style="text-align:center;color:var(--text-light);padding:24px">No data</td></tr>'
+      : catRows.map(r => {
+          const pct = catGrand > 0 ? ((r.amount / catGrand) * 100).toFixed(1) + '%' : '—';
+          return `<tr><td>${sanitize(r.name)}</td><td>${r.count}</td><td>${fmt(r.amount)}</td><td>${pct}</td></tr>`;
+        }).join('');
+    $('#rptCategoryTotalRow').innerHTML = catGrand > 0
+      ? `<td><strong>TOTAL</strong></td><td><strong>${catRows.reduce((s, r) => s + r.count, 0)}</strong></td><td><strong>${fmt(catGrand)}</strong></td><td><strong>100%</strong></td>` : '';
+
+    // ─── Expense Breakdown ───
+    const expMap = {};
+    fExp.forEach(r => {
+      const k = (r.category || 'Other').trim().toLowerCase();
+      if (!expMap[k]) expMap[k] = { name: r.category || 'Other', count: 0, amount: 0 };
+      expMap[k].count++;
+      expMap[k].amount += r.amount;
+    });
+    const expRows = Object.values(expMap).sort((a, b) => b.amount - a.amount);
+    const expGrandR = expRows.reduce((s, r) => s + r.amount, 0);
+    $('#rptExpTable tbody').innerHTML = expRows.length === 0
+      ? '<tr><td colspan="4" style="text-align:center;color:var(--text-light);padding:24px">No expenses</td></tr>'
+      : expRows.map(r => {
+          const pct = expGrandR > 0 ? ((r.amount / expGrandR) * 100).toFixed(1) + '%' : '—';
+          return `<tr><td>${sanitize(r.name)}</td><td>${r.count}</td><td>${fmt(r.amount)}</td><td>${pct}</td></tr>`;
+        }).join('');
+    $('#rptExpTotalRow').innerHTML = expGrandR > 0
+      ? `<td><strong>TOTAL</strong></td><td><strong>${expRows.reduce((s, r) => s + r.count, 0)}</strong></td><td><strong>${fmt(expGrandR)}</strong></td><td><strong>100%</strong></td>` : '';
+
+    // ─── Daily Breakdown ───
+    const dayData = {};
+    fOut.forEach(r => {
+      if (!dayData[r.date]) dayData[r.date] = { revenue: 0, purchases: 0, expenses: 0 };
+      dayData[r.date].revenue += r.amount;
+    });
+    fIn.forEach(r => {
+      if (!dayData[r.date]) dayData[r.date] = { revenue: 0, purchases: 0, expenses: 0 };
+      dayData[r.date].purchases += r.cost;
+    });
+    fExp.forEach(r => {
+      if (!dayData[r.date]) dayData[r.date] = { revenue: 0, purchases: 0, expenses: 0 };
+      dayData[r.date].expenses += r.amount;
+    });
+    const dayRows = Object.entries(dayData).sort(([a], [b]) => a.localeCompare(b)).map(([date, d]) => ({
+      date, ...d, totalCost: d.purchases + d.expenses, net: d.revenue - d.purchases - d.expenses
+    }));
+    const dayTotals = dayRows.reduce((t, r) => ({ revenue: t.revenue + r.revenue, purchases: t.purchases + r.purchases, expenses: t.expenses + r.expenses, totalCost: t.totalCost + r.totalCost, net: t.net + r.net }), { revenue: 0, purchases: 0, expenses: 0, totalCost: 0, net: 0 });
+    $('#rptDailyTable tbody').innerHTML = dayRows.length === 0
+      ? '<tr><td colspan="6" style="text-align:center;color:var(--text-light);padding:24px">No data</td></tr>'
+      : dayRows.map(r => `<tr><td>${r.date}</td><td>${fmt(r.revenue)}</td><td>${fmt(r.purchases)}</td><td>${fmt(r.expenses)}</td><td>${fmt(r.totalCost)}</td><td class="${r.net >= 0 ? 'profit' : 'loss'}">${fmt(r.net)}</td></tr>`).join('');
+    $('#rptDailyTotalRow').innerHTML = dayRows.length
+      ? `<td><strong>TOTAL</strong></td><td><strong>${fmt(dayTotals.revenue)}</strong></td><td><strong>${fmt(dayTotals.purchases)}</strong></td><td><strong>${fmt(dayTotals.expenses)}</strong></td><td><strong>${fmt(dayTotals.totalCost)}</strong></td><td class="${dayTotals.net >= 0 ? 'profit' : 'loss'}"><strong>${fmt(dayTotals.net)}</strong></td>` : '';
+
+    // Show report
+    $('#reportOutput').style.display = '';
+  }
+
+  $('#btnGenReport').addEventListener('click', renderReport);
+
+  // Export All Report tables to XLSX (multi-sheet)
+  $('#btnExportReport').addEventListener('click', () => {
+    if ($('#reportOutput').style.display === 'none') return toast('Generate a report first', true);
+    const { from, to } = getReportDateRange();
+    const wb = XLSX.utils.book_new();
+    const addSheet = (tableId, name) => {
+      const tbl = document.getElementById(tableId);
+      if (tbl) { const ws = XLSX.utils.table_to_sheet(tbl); XLSX.utils.book_append_sheet(wb, ws, name); }
+    };
+    addSheet('rptPurchaseTable', 'Purchases by Item');
+    addSheet('rptSupplierTable', 'Purchases by Supplier');
+    addSheet('rptSalesTable', 'Sales by Item');
+    addSheet('rptPersonTable', 'Sales by Person');
+    addSheet('rptCategoryTable', 'Sales by Category');
+    addSheet('rptExpTable', 'Expenses');
+    addSheet('rptDailyTable', 'Daily Breakdown');
+    XLSX.writeFile(wb, 'canteen_report_' + from + '_to_' + to + '.xlsx');
+    toast('Report exported to .xlsx');
+  });
 
   // ── Clear Data ────────────────────────────────────
   $('#clearDataBtn').addEventListener('click', async () => {

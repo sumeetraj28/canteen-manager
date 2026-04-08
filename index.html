@@ -65,6 +65,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
         Sales
       </a>
+      <a href="#" class="nav-item" data-page="reports">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Reports
+      </a>
       <a href="#" class="nav-item" data-page="changelog">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
         Changelog
@@ -913,6 +917,149 @@
             </table>
           </div>
         </div>
+      </section>
+
+      <!-- ==================== REPORTS ==================== -->
+      <section class="page" id="page-reports">
+        <!-- Period Selector Bar -->
+        <div class="table-card" style="margin-bottom:20px">
+          <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end">
+            <div class="form-group" style="margin:0;min-width:140px">
+              <label for="rptPeriod" style="font-size:.75rem;margin-bottom:4px">Period</label>
+              <select id="rptPeriod" class="filter-input" style="width:100%">
+                <option value="this-week">This Week</option>
+                <option value="last-week">Last Week</option>
+                <option value="this-month" selected>This Month</option>
+                <option value="last-month">Last Month</option>
+                <option value="this-fy">This FY</option>
+                <option value="last-fy">Last FY</option>
+                <option value="custom">Custom Range</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin:0;min-width:130px;display:none" id="rptCustomFrom">
+              <label for="rptFrom" style="font-size:.75rem;margin-bottom:4px">From</label>
+              <input type="date" id="rptFrom" class="filter-input" style="width:100%" />
+            </div>
+            <div class="form-group" style="margin:0;min-width:130px;display:none" id="rptCustomTo">
+              <label for="rptTo" style="font-size:.75rem;margin-bottom:4px">To</label>
+              <input type="date" id="rptTo" class="filter-input" style="width:100%" />
+            </div>
+            <button class="btn-primary btn-sm" id="btnGenReport" style="height:36px">Generate Report</button>
+            <button class="btn-secondary btn-sm" id="btnExportReport" style="height:36px">Export All .xlsx</button>
+          </div>
+          <div id="rptPeriodLabel" style="margin-top:10px;font-size:.82rem;color:var(--text-light)"></div>
+        </div>
+
+        <!-- Report Output -->
+        <div id="reportOutput" style="display:none">
+
+          <!-- KPI Cards -->
+          <div class="stats-grid" style="margin-bottom:20px">
+            <div class="stat-card"><div class="stat-label">Total Revenue</div><div class="stat-value" id="rptRevenue">₹0</div></div>
+            <div class="stat-card"><div class="stat-label">Total Purchases</div><div class="stat-value" id="rptPurchases">₹0</div></div>
+            <div class="stat-card"><div class="stat-label">Other Expenses</div><div class="stat-value" id="rptExpenses">₹0</div></div>
+            <div class="stat-card"><div class="stat-label">Total Cost</div><div class="stat-value" id="rptTotalCost">₹0</div></div>
+            <div class="stat-card"><div class="stat-label">Net Profit / Loss</div><div class="stat-value" id="rptNet">₹0</div></div>
+            <div class="stat-card"><div class="stat-label">Margin %</div><div class="stat-value" id="rptMargin">—</div></div>
+            <div class="stat-card"><div class="stat-label">Transactions</div><div class="stat-value" id="rptTxns">0</div></div>
+            <div class="stat-card"><div class="stat-label">Active Days</div><div class="stat-value" id="rptDays">0</div></div>
+            <div class="stat-card"><div class="stat-label">Avg Daily Revenue</div><div class="stat-value" id="rptAvgRev">₹0</div></div>
+            <div class="stat-card"><div class="stat-label">Avg Daily Cost</div><div class="stat-value" id="rptAvgCost">₹0</div></div>
+          </div>
+
+          <!-- Charts Row -->
+          <div class="chart-grid" style="margin-bottom:20px">
+            <div class="chart-card"><h4>Revenue vs Cost</h4><canvas id="chartRptRevCost"></canvas></div>
+            <div class="chart-card"><h4>Cost Breakdown</h4><canvas id="chartRptCostBreak"></canvas></div>
+            <div class="chart-card"><h4>Daily Revenue Trend</h4><canvas id="chartRptDailyRev"></canvas></div>
+            <div class="chart-card"><h4>Expense Categories</h4><canvas id="chartRptExpCat"></canvas></div>
+          </div>
+
+          <!-- Purchase Summary by Item -->
+          <div class="table-card" style="margin-bottom:20px">
+            <div class="table-header"><h3>Purchase Summary — by Item</h3></div>
+            <div class="table-scroll">
+              <table id="rptPurchaseTable">
+                <thead><tr><th>Item</th><th>Brand</th><th>Supplier</th><th>Qty</th><th>Unit</th><th>Total Cost (₹)</th><th>Avg Rate (₹)</th></tr></thead>
+                <tbody></tbody>
+                <tfoot><tr id="rptPurchaseTotalRow"></tr></tfoot>
+              </table>
+            </div>
+          </div>
+
+          <!-- Purchase Summary by Supplier -->
+          <div class="table-card" style="margin-bottom:20px">
+            <div class="table-header"><h3>Purchase Summary — by Supplier</h3></div>
+            <div class="table-scroll">
+              <table id="rptSupplierTable">
+                <thead><tr><th>Supplier</th><th>Items</th><th>Total Qty</th><th>Total Cost (₹)</th><th>% of Purchases</th></tr></thead>
+                <tbody></tbody>
+                <tfoot><tr id="rptSupplierTotalRow"></tr></tfoot>
+              </table>
+            </div>
+          </div>
+
+          <!-- Sales Summary by Item -->
+          <div class="table-card" style="margin-bottom:20px">
+            <div class="table-header"><h3>Sales Summary — by Item</h3></div>
+            <div class="table-scroll">
+              <table id="rptSalesTable">
+                <thead><tr><th>Item</th><th>Category</th><th>Qty Sold</th><th>Unit</th><th>Total Amount (₹)</th><th>Avg Rate (₹)</th></tr></thead>
+                <tbody></tbody>
+                <tfoot><tr id="rptSalesTotalRow"></tr></tfoot>
+              </table>
+            </div>
+          </div>
+
+          <!-- Sales by Person -->
+          <div class="table-card" style="margin-bottom:20px">
+            <div class="table-header"><h3>Sales Summary — by Person</h3></div>
+            <div class="table-scroll">
+              <table id="rptPersonTable">
+                <thead><tr><th>Person</th><th>Transactions</th><th>Total Amount (₹)</th><th>% of Sales</th></tr></thead>
+                <tbody></tbody>
+                <tfoot><tr id="rptPersonTotalRow"></tr></tfoot>
+              </table>
+            </div>
+          </div>
+
+          <!-- Sales by Category -->
+          <div class="table-card" style="margin-bottom:20px">
+            <div class="table-header"><h3>Sales Summary — by Category</h3></div>
+            <div class="table-scroll">
+              <table id="rptCategoryTable">
+                <thead><tr><th>Category</th><th>Transactions</th><th>Total Amount (₹)</th><th>% of Sales</th></tr></thead>
+                <tbody></tbody>
+                <tfoot><tr id="rptCategoryTotalRow"></tr></tfoot>
+              </table>
+            </div>
+          </div>
+
+          <!-- Expense Breakdown by Category -->
+          <div class="table-card" style="margin-bottom:20px">
+            <div class="table-header"><h3>Expense Breakdown — by Category</h3></div>
+            <div class="table-scroll">
+              <table id="rptExpTable">
+                <thead><tr><th>Category</th><th>Count</th><th>Total Amount (₹)</th><th>% of Expenses</th></tr></thead>
+                <tbody></tbody>
+                <tfoot><tr id="rptExpTotalRow"></tr></tfoot>
+              </table>
+            </div>
+          </div>
+
+          <!-- Daily Breakdown -->
+          <div class="table-card" style="margin-bottom:20px">
+            <div class="table-header"><h3>Day-wise Breakdown</h3></div>
+            <div class="table-scroll">
+              <table id="rptDailyTable">
+                <thead><tr><th>Date</th><th>Revenue (₹)</th><th>Purchases (₹)</th><th>Expenses (₹)</th><th>Total Cost (₹)</th><th>Net P&amp;L (₹)</th></tr></thead>
+                <tbody></tbody>
+                <tfoot><tr id="rptDailyTotalRow"></tr></tfoot>
+              </table>
+            </div>
+          </div>
+
+        </div><!-- /reportOutput -->
       </section>
 
       <!-- ==================== CHANGELOG ==================== -->
