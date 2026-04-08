@@ -1258,11 +1258,12 @@
     return 'FC/' + prefix + '/' + fy + '/' + mm + '/' + String(num).padStart(3, '0');
   }
 
-  // Toggle between Customer Bill and Expense Bill forms
+  // Toggle between Customer Bill, Expense Bill, and Invoice forms
   $('#billType').addEventListener('change', () => {
-    const isCustomer = $('#billType').value === 'customer';
-    $('#billCustomerForm').style.display = isCustomer ? '' : 'none';
-    $('#billExpenseForm').style.display = isCustomer ? 'none' : '';
+    const v = $('#billType').value;
+    $('#billCustomerForm').style.display = v === 'customer' ? '' : 'none';
+    $('#billExpenseForm').style.display = v === 'expense' ? '' : 'none';
+    $('#billInvoiceForm').style.display = v === 'invoice' ? '' : 'none';
     $('#billPreviewCard').style.display = 'none';
   });
 
@@ -1335,6 +1336,49 @@
     }
   });
 
+  // ── Invoice: dynamic item rows ────────────────────
+  function invRecalc() {
+    let sub = 0;
+    $$('#invItems .bill-item-row').forEach(row => {
+      const qty = parseFloat(row.querySelector('.inv-item-qty').value) || 0;
+      const rate = parseFloat(row.querySelector('.inv-item-rate').value) || 0;
+      const amt = qty * rate;
+      row.querySelector('.inv-item-amt').value = amt ? fmt(amt) : '';
+      sub += amt;
+    });
+    $('#invSubtotal').value = fmt(sub);
+    const taxPct = parseFloat($('#invTaxPct').value) || 0;
+    const taxAmt = sub * taxPct / 100;
+    $('#invTaxAmt').value = fmt(taxAmt);
+    const disc = parseFloat($('#invDiscount').value) || 0;
+    $('#invGrandTotal').value = fmt(Math.max(0, sub + taxAmt - disc));
+  }
+
+  function invMakeRow() {
+    const row = document.createElement('div');
+    row.className = 'bill-item-row';
+    row.innerHTML = `<input type="text" placeholder="Item / Service" class="inv-item-name" required />
+      <input type="number" placeholder="Qty" class="inv-item-qty" min="1" step="1" value="1" required />
+      <input type="number" placeholder="Rate (₹)" class="inv-item-rate" min="0" step="0.01" required />
+      <input type="text" placeholder="Amount" class="inv-item-amt" readonly tabindex="-1" />
+      <button type="button" class="btn-sm btn-danger inv-remove-row" title="Remove">&times;</button>`;
+    return row;
+  }
+
+  $('#invAddRow').addEventListener('click', () => { $('#invItems').appendChild(invMakeRow()); });
+
+  $('#invItems').addEventListener('input', (e) => {
+    if (e.target.classList.contains('inv-item-qty') || e.target.classList.contains('inv-item-rate')) invRecalc();
+  });
+  $('#invItems').addEventListener('click', (e) => {
+    if (e.target.classList.contains('inv-remove-row')) {
+      if ($$('#invItems .bill-item-row').length > 1) { e.target.closest('.bill-item-row').remove(); invRecalc(); }
+      else toast('At least one item required', true);
+    }
+  });
+  $('#invDiscount').addEventListener('input', invRecalc);
+  $('#invTaxPct').addEventListener('input', invRecalc);
+
   // ── Collect form data as objects ──────────────────
   function collectCustomerBillData() {
     const items = [];
@@ -1381,6 +1425,39 @@
       items,
       grandTotal: total,
       notes: $('#ebNotes').value.trim()
+    };
+  }
+
+  function collectInvoiceData() {
+    const items = [];
+    let sub = 0;
+    $$('#invItems .bill-item-row').forEach(row => {
+      const name = row.querySelector('.inv-item-name').value.trim();
+      const qty = parseFloat(row.querySelector('.inv-item-qty').value) || 0;
+      const rate = parseFloat(row.querySelector('.inv-item-rate').value) || 0;
+      const amt = qty * rate;
+      if (name && amt) { items.push({ name, qty, rate, amt }); sub += amt; }
+    });
+    if (!items.length) return null;
+    const taxPct = parseFloat($('#invTaxPct').value) || 0;
+    const taxAmt = sub * taxPct / 100;
+    const discount = parseFloat($('#invDiscount').value) || 0;
+    return {
+      type: 'invoice',
+      billNo: $('#invBillNo').value,
+      date: $('#invDate').value,
+      dueDate: $('#invDueDate').value || '',
+      billedTo: $('#invBilledTo').value.trim(),
+      address: $('#invAddress').value.trim(),
+      gstin: $('#invGSTIN').value.trim(),
+      items,
+      subtotal: sub,
+      taxPct,
+      taxAmt,
+      discount,
+      grandTotal: Math.max(0, sub + taxAmt - discount),
+      paymentMode: $('#invPaymentMode').value,
+      notes: $('#invNotes').value.trim()
     };
   }
 
@@ -1449,8 +1526,47 @@
     </div>`;
   }
 
+  function buildInvoiceHTMLFromData(d) {
+    const rows = d.items.map((it, i) =>
+      `<tr><td>${i + 1}</td><td>${sanitize(it.name)}</td><td>${it.qty}</td><td>${fmt(it.rate)}</td><td style="text-align:right">${fmt(it.amt)}</td></tr>`
+    ).join('');
+    return `<div class="bill-print" id="billPrintArea">
+      <div class="bill-header">
+        <h2>RTCIT Food Court</h2>
+        <p>Anandi, Ormanjhi, Ranchi</p>
+      </div>
+      <h3 class="bill-title">INVOICE</h3>
+      <div class="bill-meta">
+        <div><strong>Invoice No:</strong> ${sanitize(d.billNo || '—')}</div>
+        <div><strong>Date:</strong> ${fmtDate(d.date) || '—'}</div>
+        ${d.dueDate ? `<div><strong>Due Date:</strong> ${fmtDate(d.dueDate)}</div>` : ''}
+        <div><strong>Billed To:</strong> ${sanitize(d.billedTo)}</div>
+        ${d.address ? `<div><strong>Address:</strong> ${sanitize(d.address)}</div>` : ''}
+        ${d.gstin ? `<div><strong>GSTIN / PAN:</strong> ${sanitize(d.gstin)}</div>` : ''}
+      </div>
+      <table class="bill-table">
+        <thead><tr><th>#</th><th>Item / Service</th><th>Qty</th><th>Rate</th><th style="text-align:right">Amount</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="bill-totals">
+        <div class="bill-total-row"><span>Subtotal</span><span>${fmt(d.subtotal)}</span></div>
+        ${d.taxPct ? `<div class="bill-total-row"><span>Tax / GST (${d.taxPct}%)</span><span>${fmt(d.taxAmt)}</span></div>` : ''}
+        ${d.discount ? `<div class="bill-total-row"><span>Discount</span><span>-${fmt(d.discount)}</span></div>` : ''}
+        <div class="bill-total-row bill-grand-total"><span>Grand Total</span><span>${fmt(d.grandTotal)}</span></div>
+      </div>
+      ${d.paymentMode ? `<div class="bill-notes"><strong>Payment Mode:</strong> ${sanitize(d.paymentMode)}</div>` : ''}
+      ${d.notes ? `<div class="bill-notes"><strong>Notes / Terms:</strong> ${sanitize(d.notes)}</div>` : ''}
+      <div class="bill-footer">
+        <p>Thank you for your business.</p>
+        <p class="bill-auto-note">This is a computer-generated invoice and does not require a signature.</p>
+      </div>
+    </div>`;
+  }
+
   function billHTMLFromData(d) {
-    return d.type === 'customer' ? buildCustomerBillHTMLFromData(d) : buildExpenseBillHTMLFromData(d);
+    if (d.type === 'customer') return buildCustomerBillHTMLFromData(d);
+    if (d.type === 'invoice') return buildInvoiceHTMLFromData(d);
+    return buildExpenseBillHTMLFromData(d);
   }
 
   // ── Save bill to Firestore ────────────────────────
@@ -1485,6 +1601,17 @@
     $('#ebTotal').value = '₹0';
     $('#ebBillNo').value = '';
     $('#ebDate').value = today();
+  }
+
+  function resetInvoiceForm() {
+    $('#formInvoiceBill').reset();
+    $('#invItems').innerHTML = '';
+    $('#invItems').appendChild(invMakeRow());
+    $('#invSubtotal').value = '₹0';
+    $('#invTaxAmt').value = '₹0';
+    $('#invGrandTotal').value = '₹0';
+    $('#invBillNo').value = '';
+    $('#invDate').value = today();
   }
 
   // ── Preview / PDF / Print handlers ────────────────
@@ -1550,18 +1677,21 @@
 
   // ── Generate bill (save + action) ─────────────────
   async function generateBill(type, action) {
-    const prefix = type === 'customer' ? 'CB' : 'GE';
-    const billNoField = type === 'customer' ? '#cbBillNo' : '#ebBillNo';
+    const prefixMap = { customer: 'CB', expense: 'GE', invoice: 'INV' };
+    const fieldMap  = { customer: '#cbBillNo', expense: '#ebBillNo', invoice: '#invBillNo' };
+    const prefix = prefixMap[type];
+    const billNoField = fieldMap[type];
     if (!$(billNoField).value) $(billNoField).value = await nextBillNo(prefix);
 
-    const data = type === 'customer' ? collectCustomerBillData() : collectExpenseBillData();
+    const collectMap = { customer: collectCustomerBillData, expense: collectExpenseBillData, invoice: collectInvoiceData };
+    const data = collectMap[type]();
     if (!data) return toast('Please fill in at least one item with valid data', true);
 
     const html = billHTMLFromData(data);
 
     // Save to Firestore
     await saveBillToFirestore(data);
-    logAuthEvent(auth.currentUser?.email, 'Generated Bill: ' + data.billNo);
+    logAuthEvent(auth.currentUser?.email, 'Generated ' + (type === 'invoice' ? 'Invoice' : 'Bill') + ': ' + data.billNo);
 
     // Perform the action
     if (action === 'preview') {
@@ -1577,9 +1707,12 @@
     if (type === 'customer') {
       resetCustomerBillForm();
       $('#cbBillNo').value = await nextBillNo('CB');
-    } else {
+    } else if (type === 'expense') {
       resetExpenseBillForm();
       $('#ebBillNo').value = await nextBillNo('GE');
+    } else {
+      resetInvoiceForm();
+      $('#invBillNo').value = await nextBillNo('INV');
     }
   }
 
@@ -1592,6 +1725,11 @@
   $('#ebPreview').addEventListener('click', () => generateBill('expense', 'preview'));
   $('#ebDownloadPdf').addEventListener('click', () => generateBill('expense', 'pdf'));
   $('#ebPrint').addEventListener('click', () => generateBill('expense', 'print'));
+
+  // Invoice buttons
+  $('#invPreview').addEventListener('click', () => generateBill('invoice', 'preview'));
+  $('#invDownloadPdf').addEventListener('click', () => generateBill('invoice', 'pdf'));
+  $('#invPrint').addEventListener('click', () => generateBill('invoice', 'print'));
 
   // ── Bill History ──────────────────────────────────
   function getBillFilters() {
@@ -1611,14 +1749,14 @@
       if (f.dateTo && r.date > f.dateTo) return false;
       if (f.type && r.type !== f.type) return false;
       if (f.search) {
-        const hay = ((r.billNo || '') + ' ' + (r.customer || '') + ' ' + (r.paidTo || '')).toLowerCase();
+        const hay = ((r.billNo || '') + ' ' + (r.customer || '') + ' ' + (r.paidTo || '') + ' ' + (r.billedTo || '')).toLowerCase();
         if (!hay.includes(f.search)) return false;
       }
       return true;
     });
     filtered = applySort(filtered, 'tableBills', (r, col) => {
       if (col === 'amount') return r.grandTotal || 0;
-      if (col === 'party') return r.customer || r.paidTo || '';
+      if (col === 'party') return r.customer || r.paidTo || r.billedTo || '';
       return r[col] || '';
     });
     lastFilteredBills = filtered;
@@ -1627,8 +1765,8 @@
       : filtered.map(r => `<tr>
           <td>${sanitize(fmtDate(r.date))}</td>
           <td>${sanitize(r.billNo || '—')}</td>
-          <td>${r.type === 'customer' ? 'Customer' : 'Expense'}</td>
-          <td>${sanitize(r.customer || r.paidTo || '—')}</td>
+          <td>${{ customer:'Customer', expense:'Expense', invoice:'Invoice' }[r.type] || r.type}</td>
+          <td>${sanitize(r.customer || r.paidTo || r.billedTo || '—')}</td>
           <td>${fmt(r.grandTotal || 0)}</td>
           <td>
             <button class="btn-edit bill-view-btn" data-id="${sanitize(r.id)}">View</button>
@@ -1677,8 +1815,8 @@
   // Export bills
   $('#btnExportBills').addEventListener('click', () => {
     exportXlsx(
-      lastFilteredBills.map(r => [fmtDate(r.date), r.billNo, r.type === 'customer' ? 'Customer' : 'Expense',
-        r.customer || r.paidTo || '', r.grandTotal || 0, r.notes || '']),
+      lastFilteredBills.map(r => [fmtDate(r.date), r.billNo, { customer:'Customer', expense:'Expense', invoice:'Invoice' }[r.type] || r.type,
+        r.customer || r.paidTo || r.billedTo || '', r.grandTotal || 0, r.notes || '']),
       ['Date','Bill No.','Type','Customer / Paid To','Amount (₹)','Notes'],
       'canteen_bills'
     );
@@ -1692,6 +1830,8 @@
     // Auto-assign next bill numbers
     if (!$('#cbBillNo').value) $('#cbBillNo').value = await nextBillNo('CB');
     if (!$('#ebBillNo').value) $('#ebBillNo').value = await nextBillNo('GE');
+    if (!$('#invDate').value) $('#invDate').value = today();
+    if (!$('#invBillNo').value) $('#invBillNo').value = await nextBillNo('INV');
     renderBillHistory();
   }
 
@@ -2851,6 +2991,15 @@
 
   /* ── Version History (auto-rendered from data) ──────────────── */
   const VERSION_HISTORY = [
+    { ver:'v3.5', date:'Apr 8, 2026', title:'Invoice Generator', items:[
+      'New "Invoice" bill type in Bill Generator tab',
+      'Invoice form with Billed To, Address, GSTIN/PAN, Due Date fields',
+      'Tax / GST percentage with auto-calculated tax amount',
+      'Discount support, payment mode selector',
+      'Auto-generated invoice numbers: <code>FC/INV/{FY}/{MM}/NNN</code>',
+      'Invoice preview, PDF download, and print',
+      'Full integration with Bill History — filter, view, export invoices'
+    ]},
     { ver:'v3.4', date:'Apr 9, 2026', title:'Auto-Rendering Version History', items:[
       'Changelog entries now rendered dynamically from a JS data array',
       'Adding a new version only requires a single array entry — no HTML editing'

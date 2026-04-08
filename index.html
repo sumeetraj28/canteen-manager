@@ -842,6 +842,7 @@
               <select id="billType">
                 <option value="customer">Customer Bill</option>
                 <option value="expense">General Expense Bill</option>
+                <option value="invoice">Invoice</option>
               </select>
             </div>
           </div>
@@ -984,6 +985,97 @@
           </form>
         </div>
 
+        <!-- ── Invoice Form ── -->
+        <div id="billInvoiceForm" class="form-card" style="display:none">
+          <h3>Invoice</h3>
+          <form id="formInvoiceBill">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="invDate">Date</label>
+                <input type="date" id="invDate" required />
+              </div>
+              <div class="form-group">
+                <label for="invBillNo">Invoice No.</label>
+                <input type="text" id="invBillNo" readonly tabindex="-1" style="background:var(--card-bg);cursor:default" />
+              </div>
+              <div class="form-group">
+                <label for="invDueDate">Due Date (optional)</label>
+                <input type="date" id="invDueDate" />
+              </div>
+              <div class="form-group">
+                <label for="invBilledTo">Billed To</label>
+                <input type="text" id="invBilledTo" placeholder="Company / Person name" required />
+              </div>
+              <div class="form-group">
+                <label for="invAddress">Address (optional)</label>
+                <input type="text" id="invAddress" placeholder="Billing address" />
+              </div>
+              <div class="form-group">
+                <label for="invGSTIN">GSTIN / PAN (optional)</label>
+                <input type="text" id="invGSTIN" placeholder="GSTIN or PAN" />
+              </div>
+            </div>
+
+            <h4 style="margin:18px 0 8px">Line Items</h4>
+            <div id="invItems">
+              <div class="bill-item-row">
+                <input type="text" placeholder="Item / Service" class="inv-item-name" required />
+                <input type="number" placeholder="Qty" class="inv-item-qty" min="1" step="1" value="1" required />
+                <input type="number" placeholder="Rate (₹)" class="inv-item-rate" min="0" step="0.01" required />
+                <input type="text" placeholder="Amount" class="inv-item-amt" readonly tabindex="-1" />
+                <button type="button" class="btn-sm btn-danger inv-remove-row" title="Remove">&times;</button>
+              </div>
+            </div>
+            <button type="button" class="btn-secondary btn-sm" id="invAddRow" style="margin-top:8px">+ Add Item</button>
+
+            <div class="form-grid" style="margin-top:16px">
+              <div class="form-group">
+                <label>Subtotal</label>
+                <input type="text" id="invSubtotal" readonly tabindex="-1" value="₹0" />
+              </div>
+              <div class="form-group">
+                <label for="invTaxPct">Tax / GST (%)</label>
+                <input type="number" id="invTaxPct" min="0" max="100" step="0.01" value="0" />
+              </div>
+              <div class="form-group">
+                <label>Tax Amount</label>
+                <input type="text" id="invTaxAmt" readonly tabindex="-1" value="₹0" />
+              </div>
+              <div class="form-group">
+                <label for="invDiscount">Discount (₹)</label>
+                <input type="number" id="invDiscount" min="0" step="0.01" value="0" />
+              </div>
+              <div class="form-group">
+                <label>Grand Total</label>
+                <input type="text" id="invGrandTotal" readonly tabindex="-1" value="₹0" style="font-weight:700;font-size:1.1em" />
+              </div>
+            </div>
+
+            <div class="form-grid" style="margin-top:8px">
+              <div class="form-group">
+                <label for="invPaymentMode">Payment Mode</label>
+                <select id="invPaymentMode">
+                  <option value="Cash">Cash</option>
+                  <option value="UPI">UPI</option>
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="Cheque">Cheque</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="invNotes">Notes / Terms</label>
+                <input type="text" id="invNotes" placeholder="Payment terms or remarks" />
+              </div>
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:16px">
+              <button type="button" class="btn-primary" id="invPreview">👁 Preview Invoice</button>
+              <button type="button" class="btn-secondary" id="invDownloadPdf">⬇ Download PDF</button>
+              <button type="button" class="btn-secondary" id="invPrint">🖨 Print</button>
+            </div>
+          </form>
+        </div>
+
         <!-- ── Bill Preview Area ── -->
         <div class="table-card" id="billPreviewCard" style="display:none">
           <div class="table-header">
@@ -1008,6 +1100,7 @@
               <option value="">All Types</option>
               <option value="customer">Customer Bill</option>
               <option value="expense">Expense Bill</option>
+              <option value="invoice">Invoice</option>
             </select>
             <input type="text" id="filterBillSearch" class="filter-input" placeholder="Search bill no / customer / paid to..." />
           </div>
