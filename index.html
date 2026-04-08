@@ -992,6 +992,40 @@
           <div id="billPreviewArea"></div>
         </div>
 
+        <!-- ── Bill History ── -->
+        <div class="table-card">
+          <div class="table-header">
+            <h3>Bill History</h3>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn-secondary btn-sm" id="btnExportBills">Export .xlsx</button>
+              <button class="btn-sm" id="clearFiltersBills">Clear Filters</button>
+            </div>
+          </div>
+          <div class="filter-row">
+            <input type="date" id="filterBillDateFrom" class="filter-input" title="From date" />
+            <input type="date" id="filterBillDateTo" class="filter-input" title="To date" />
+            <select id="filterBillType" class="filter-input">
+              <option value="">All Types</option>
+              <option value="customer">Customer Bill</option>
+              <option value="expense">Expense Bill</option>
+            </select>
+            <input type="text" id="filterBillSearch" class="filter-input" placeholder="Search bill no / customer / paid to..." />
+          </div>
+          <div class="table-wrapper">
+            <table id="tableBills">
+              <thead><tr>
+                <th class="sortable" data-col="date">Date <span class="sort-icon"></span></th>
+                <th class="sortable" data-col="billNo">Bill No. <span class="sort-icon"></span></th>
+                <th class="sortable" data-col="type">Type <span class="sort-icon"></span></th>
+                <th class="sortable" data-col="party">Customer / Paid To <span class="sort-icon"></span></th>
+                <th class="sortable" data-col="amount">Amount (₹) <span class="sort-icon"></span></th>
+                <th>Action</th>
+              </tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
       </section>
 
       <!-- ==================== REPORTS ==================== -->

@@ -85,6 +85,7 @@
   const colSales    = db.collection('sales');
   const colAuthLogs  = db.collection('authLogs');
   const colBillCounters = db.collection('billCounters');
+  const colBills = db.collection('bills');
 
   // ── Toast ─────────────────────────────────────────
   function toast(msg, isError) {
@@ -194,7 +195,12 @@
         });
         const activePage = document.querySelector('.nav-item.active')?.dataset.page;
         if (activePage === 'changelog') renderAuthLog();
-      }, (err) => console.error('AuthLogs listener error:', err))
+      }, (err) => console.error('AuthLogs listener error:', err)),
+      colBills.orderBy('createdAt', 'desc').onSnapshot((snap) => {
+        bills = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const activePage = document.querySelector('.nav-item.active')?.dataset.page;
+        if (activePage === 'bill-generator') renderBillHistory();
+      }, (err) => console.error('Bills listener error:', err))
     ];
   }
 
@@ -924,12 +930,13 @@
     if (!confirm('Delete this record?')) return;
     const id = e.target.dataset.id;
     const type = e.target.dataset.type;
-    const typeLabels = { in: 'Purchase', out: 'Sale', exp: 'Expense', sale: 'Sale Record' };
+    const typeLabels = { in: 'Purchase', out: 'Sale', exp: 'Expense', sale: 'Sale Record', bill: 'Bill' };
     let promise;
     if (type === 'in')  promise = colItemsIn.doc(id).delete();
     if (type === 'out') promise = colItemsOut.doc(id).delete();
     if (type === 'exp') promise = colExpenses.doc(id).delete();
     if (type === 'sale') promise = colSales.doc(id).delete();
+    if (type === 'bill') promise = colBills.doc(id).delete();
     if (promise) promise.then(() => {
       toast('Record deleted');
       logAuthEvent(auth.currentUser?.email, 'Deleted ' + (typeLabels[type] || type) + ' #' + id.slice(0, 6));
@@ -1221,6 +1228,9 @@
   });
 
   // ── Bill Generator ────────────────────────────────
+  let bills = [];
+  let lastFilteredBills = [];
+
   // Bill number helpers
   function billFY() {
     const now = new Date();
@@ -1243,7 +1253,6 @@
       });
     } catch (err) {
       console.error('Bill counter error:', err);
-      // Fallback: timestamp-based
       num = Date.now() % 10000;
     }
     return 'FC/' + prefix + '/' + fy + '/' + mm + '/' + String(num).padStart(3, '0');
@@ -1326,22 +1335,60 @@
     }
   });
 
-  // ── Bill Preview HTML builder ─────────────────────
-  function buildCustomerBillHTML() {
-    const rows = [];
+  // ── Collect form data as objects ──────────────────
+  function collectCustomerBillData() {
+    const items = [];
     let sub = 0;
-    $$('#cbItems .bill-item-row').forEach((row, i) => {
+    $$('#cbItems .bill-item-row').forEach(row => {
       const name = row.querySelector('.cb-item-name').value.trim();
       const qty = parseFloat(row.querySelector('.cb-item-qty').value) || 0;
       const rate = parseFloat(row.querySelector('.cb-item-rate').value) || 0;
       const amt = qty * rate;
-      if (!name || !amt) return;
-      sub += amt;
-      rows.push(`<tr><td>${i + 1}</td><td>${sanitize(name)}</td><td>${qty}</td><td>${fmt(rate)}</td><td style="text-align:right">${fmt(amt)}</td></tr>`);
+      if (name && amt) { items.push({ name, qty, rate, amt }); sub += amt; }
     });
-    if (!rows.length) return null;
-    const disc = parseFloat($('#cbDiscount').value) || 0;
-    const grand = Math.max(0, sub - disc);
+    if (!items.length) return null;
+    const discount = parseFloat($('#cbDiscount').value) || 0;
+    return {
+      type: 'customer',
+      billNo: $('#cbBillNo').value,
+      date: $('#cbDate').value,
+      customer: $('#cbCustomer').value.trim(),
+      phone: $('#cbPhone').value.trim(),
+      items,
+      subtotal: sub,
+      discount,
+      grandTotal: Math.max(0, sub - discount),
+      notes: $('#cbNotes').value.trim()
+    };
+  }
+
+  function collectExpenseBillData() {
+    const items = [];
+    let total = 0;
+    $$('#ebItems .bill-item-row').forEach(row => {
+      const desc = row.querySelector('.eb-item-desc').value.trim();
+      const amt = parseFloat(row.querySelector('.eb-item-amt').value) || 0;
+      if (desc && amt) { items.push({ desc, amt }); total += amt; }
+    });
+    if (!items.length) return null;
+    return {
+      type: 'expense',
+      billNo: $('#ebBillNo').value,
+      date: $('#ebDate').value,
+      paidTo: $('#ebPaidTo').value.trim(),
+      category: $('#ebCategory').value,
+      paymentMode: $('#ebPaymentMode').value,
+      items,
+      grandTotal: total,
+      notes: $('#ebNotes').value.trim()
+    };
+  }
+
+  // ── Build bill HTML from data object ──────────────
+  function buildCustomerBillHTMLFromData(d) {
+    const rows = d.items.map((it, i) =>
+      `<tr><td>${i + 1}</td><td>${sanitize(it.name)}</td><td>${it.qty}</td><td>${fmt(it.rate)}</td><td style="text-align:right">${fmt(it.amt)}</td></tr>`
+    ).join('');
     return `<div class="bill-print" id="billPrintArea">
       <div class="bill-header">
         <h2>RTCIT Food Court</h2>
@@ -1349,21 +1396,21 @@
       </div>
       <h3 class="bill-title">CUSTOMER BILL</h3>
       <div class="bill-meta">
-        <div><strong>Bill No:</strong> ${sanitize($('#cbBillNo').value || '—')}</div>
-        <div><strong>Date:</strong> ${fmtDate($('#cbDate').value) || '—'}</div>
-        <div><strong>Customer:</strong> ${sanitize($('#cbCustomer').value)}</div>
-        ${$('#cbPhone').value ? `<div><strong>Phone:</strong> ${sanitize($('#cbPhone').value)}</div>` : ''}
+        <div><strong>Bill No:</strong> ${sanitize(d.billNo || '—')}</div>
+        <div><strong>Date:</strong> ${fmtDate(d.date) || '—'}</div>
+        <div><strong>Customer:</strong> ${sanitize(d.customer)}</div>
+        ${d.phone ? `<div><strong>Phone:</strong> ${sanitize(d.phone)}</div>` : ''}
       </div>
       <table class="bill-table">
         <thead><tr><th>#</th><th>Item</th><th>Qty</th><th>Rate</th><th style="text-align:right">Amount</th></tr></thead>
-        <tbody>${rows.join('')}</tbody>
+        <tbody>${rows}</tbody>
       </table>
       <div class="bill-totals">
-        <div class="bill-total-row"><span>Subtotal</span><span>${fmt(sub)}</span></div>
-        ${disc ? `<div class="bill-total-row"><span>Discount</span><span>-${fmt(disc)}</span></div>` : ''}
-        <div class="bill-total-row bill-grand-total"><span>Grand Total</span><span>${fmt(grand)}</span></div>
+        <div class="bill-total-row"><span>Subtotal</span><span>${fmt(d.subtotal)}</span></div>
+        ${d.discount ? `<div class="bill-total-row"><span>Discount</span><span>-${fmt(d.discount)}</span></div>` : ''}
+        <div class="bill-total-row bill-grand-total"><span>Grand Total</span><span>${fmt(d.grandTotal)}</span></div>
       </div>
-      ${$('#cbNotes').value ? `<div class="bill-notes"><strong>Notes:</strong> ${sanitize($('#cbNotes').value)}</div>` : ''}
+      ${d.notes ? `<div class="bill-notes"><strong>Notes:</strong> ${sanitize(d.notes)}</div>` : ''}
       <div class="bill-footer">
         <p>Thank you. Visit again.</p>
         <p class="bill-auto-note">This is a computer-generated bill and does not require a signature.</p>
@@ -1371,17 +1418,10 @@
     </div>`;
   }
 
-  function buildExpenseBillHTML() {
-    const rows = [];
-    let total = 0;
-    $$('#ebItems .bill-item-row').forEach((row, i) => {
-      const desc = row.querySelector('.eb-item-desc').value.trim();
-      const amt = parseFloat(row.querySelector('.eb-item-amt').value) || 0;
-      if (!desc || !amt) return;
-      total += amt;
-      rows.push(`<tr><td>${i + 1}</td><td>${sanitize(desc)}</td><td style="text-align:right">${fmt(amt)}</td></tr>`);
-    });
-    if (!rows.length) return null;
+  function buildExpenseBillHTMLFromData(d) {
+    const rows = d.items.map((it, i) =>
+      `<tr><td>${i + 1}</td><td>${sanitize(it.desc)}</td><td style="text-align:right">${fmt(it.amt)}</td></tr>`
+    ).join('');
     return `<div class="bill-print" id="billPrintArea">
       <div class="bill-header">
         <h2>RTCIT Food Court</h2>
@@ -1389,36 +1429,73 @@
       </div>
       <h3 class="bill-title">EXPENSE BILL / VOUCHER</h3>
       <div class="bill-meta">
-        <div><strong>Voucher No:</strong> ${sanitize($('#ebBillNo').value || '—')}</div>
-        <div><strong>Date:</strong> ${fmtDate($('#ebDate').value) || '—'}</div>
-        <div><strong>Paid To:</strong> ${sanitize($('#ebPaidTo').value)}</div>
-        <div><strong>Category:</strong> ${sanitize($('#ebCategory').value)}</div>
-        <div><strong>Payment Mode:</strong> ${sanitize($('#ebPaymentMode').value)}</div>
+        <div><strong>Voucher No:</strong> ${sanitize(d.billNo || '—')}</div>
+        <div><strong>Date:</strong> ${fmtDate(d.date) || '—'}</div>
+        <div><strong>Paid To:</strong> ${sanitize(d.paidTo)}</div>
+        <div><strong>Category:</strong> ${sanitize(d.category)}</div>
+        <div><strong>Payment Mode:</strong> ${sanitize(d.paymentMode)}</div>
       </div>
       <table class="bill-table">
         <thead><tr><th>#</th><th>Description</th><th style="text-align:right">Amount</th></tr></thead>
-        <tbody>${rows.join('')}</tbody>
+        <tbody>${rows}</tbody>
       </table>
       <div class="bill-totals">
-        <div class="bill-total-row bill-grand-total"><span>Total Amount</span><span>${fmt(total)}</span></div>
+        <div class="bill-total-row bill-grand-total"><span>Total Amount</span><span>${fmt(d.grandTotal)}</span></div>
       </div>
-      ${$('#ebNotes').value ? `<div class="bill-notes"><strong>Notes:</strong> ${sanitize($('#ebNotes').value)}</div>` : ''}
+      ${d.notes ? `<div class="bill-notes"><strong>Notes:</strong> ${sanitize(d.notes)}</div>` : ''}
       <div class="bill-footer">
         <p class="bill-auto-note">This is a computer-generated bill and does not require a signature.</p>
       </div>
     </div>`;
   }
 
+  function billHTMLFromData(d) {
+    return d.type === 'customer' ? buildCustomerBillHTMLFromData(d) : buildExpenseBillHTMLFromData(d);
+  }
+
+  // ── Save bill to Firestore ────────────────────────
+  async function saveBillToFirestore(data) {
+    try {
+      await colBills.add({
+        ...data,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        createdBy: auth.currentUser?.email || 'unknown'
+      });
+    } catch (err) {
+      console.error('Save bill error:', err);
+      toast('Failed to save bill to history', true);
+    }
+  }
+
+  // ── Reset form after bill generation ──────────────
+  function resetCustomerBillForm() {
+    $('#formCustomerBill').reset();
+    $('#cbItems').innerHTML = '';
+    $('#cbItems').appendChild(cbMakeRow());
+    $('#cbSubtotal').value = '₹0';
+    $('#cbGrandTotal').value = '₹0';
+    $('#cbBillNo').value = '';
+    $('#cbDate').value = today();
+  }
+
+  function resetExpenseBillForm() {
+    $('#formExpenseBill').reset();
+    $('#ebItems').innerHTML = '';
+    $('#ebItems').appendChild(ebMakeRow());
+    $('#ebTotal').value = '₹0';
+    $('#ebBillNo').value = '';
+    $('#ebDate').value = today();
+  }
+
   // ── Preview / PDF / Print handlers ────────────────
   function showBillPreview(html) {
-    if (!html) return toast('Please fill in at least one item with valid data', true);
+    if (!html) return;
     $('#billPreviewArea').innerHTML = html;
     $('#billPreviewCard').style.display = '';
     $('#billPreviewCard').scrollIntoView({ behavior: 'smooth' });
   }
 
   async function downloadBillPdf(html, filename) {
-    if (!html) return toast('Please fill in at least one item with valid data', true);
     const container = document.createElement('div');
     container.style.cssText = 'position:absolute;left:-9999px;top:0;width:800px';
     container.innerHTML = html;
@@ -1435,7 +1512,6 @@
       const imgH = (canvas.height * imgW) / canvas.width;
       pdf.addImage(imgData, 'PNG', margin, margin, imgW, imgH);
       pdf.save(filename + '_' + today() + '.pdf');
-      logAuthEvent(auth.currentUser?.email, 'Downloaded Bill PDF: ' + filename);
       toast('PDF downloaded');
     } catch (err) {
       console.error('Bill PDF error:', err);
@@ -1446,7 +1522,6 @@
   }
 
   function printBill(html) {
-    if (!html) return toast('Please fill in at least one item with valid data', true);
     const w = window.open('', '_blank', 'width=820,height=900');
     w.document.write(`<!DOCTYPE html><html><head><title>Bill</title>
       <style>
@@ -1473,29 +1548,142 @@
     w.print();
   }
 
-  // Customer bill buttons
-  async function ensureCbBillNo() {
-    if (!$('#cbBillNo').value) $('#cbBillNo').value = await nextBillNo('CB');
+  // ── Generate bill (save + action) ─────────────────
+  async function generateBill(type, action) {
+    const prefix = type === 'customer' ? 'CB' : 'GE';
+    const billNoField = type === 'customer' ? '#cbBillNo' : '#ebBillNo';
+    if (!$(billNoField).value) $(billNoField).value = await nextBillNo(prefix);
+
+    const data = type === 'customer' ? collectCustomerBillData() : collectExpenseBillData();
+    if (!data) return toast('Please fill in at least one item with valid data', true);
+
+    const html = billHTMLFromData(data);
+
+    // Save to Firestore
+    await saveBillToFirestore(data);
+    logAuthEvent(auth.currentUser?.email, 'Generated Bill: ' + data.billNo);
+
+    // Perform the action
+    if (action === 'preview') {
+      showBillPreview(html);
+    } else if (action === 'pdf') {
+      const fname = 'RTCIT_' + data.billNo.replace(/[^a-zA-Z0-9-_]/g, '_');
+      await downloadBillPdf(html, fname);
+    } else if (action === 'print') {
+      printBill(html);
+    }
+
+    // Reset form and get next bill number
+    if (type === 'customer') {
+      resetCustomerBillForm();
+      $('#cbBillNo').value = await nextBillNo('CB');
+    } else {
+      resetExpenseBillForm();
+      $('#ebBillNo').value = await nextBillNo('GE');
+    }
   }
-  $('#cbPreview').addEventListener('click', async () => { await ensureCbBillNo(); showBillPreview(buildCustomerBillHTML()); });
-  $('#cbDownloadPdf').addEventListener('click', async () => {
-    await ensureCbBillNo();
-    const no = $('#cbBillNo').value.trim() || 'CustomerBill';
-    downloadBillPdf(buildCustomerBillHTML(), 'RTCIT_' + no.replace(/[^a-zA-Z0-9-_]/g, '_'));
-  });
-  $('#cbPrint').addEventListener('click', async () => { await ensureCbBillNo(); printBill(buildCustomerBillHTML()); });
+
+  // Customer bill buttons
+  $('#cbPreview').addEventListener('click', () => generateBill('customer', 'preview'));
+  $('#cbDownloadPdf').addEventListener('click', () => generateBill('customer', 'pdf'));
+  $('#cbPrint').addEventListener('click', () => generateBill('customer', 'print'));
 
   // Expense bill buttons
-  async function ensureEbBillNo() {
-    if (!$('#ebBillNo').value) $('#ebBillNo').value = await nextBillNo('GE');
+  $('#ebPreview').addEventListener('click', () => generateBill('expense', 'preview'));
+  $('#ebDownloadPdf').addEventListener('click', () => generateBill('expense', 'pdf'));
+  $('#ebPrint').addEventListener('click', () => generateBill('expense', 'print'));
+
+  // ── Bill History ──────────────────────────────────
+  function getBillFilters() {
+    return {
+      dateFrom: $('#filterBillDateFrom').value,
+      dateTo: $('#filterBillDateTo').value,
+      type: $('#filterBillType').value,
+      search: $('#filterBillSearch').value.trim().toLowerCase()
+    };
   }
-  $('#ebPreview').addEventListener('click', async () => { await ensureEbBillNo(); showBillPreview(buildExpenseBillHTML()); });
-  $('#ebDownloadPdf').addEventListener('click', async () => {
-    await ensureEbBillNo();
-    const no = $('#ebBillNo').value.trim() || 'ExpenseBill';
-    downloadBillPdf(buildExpenseBillHTML(), 'RTCIT_' + no.replace(/[^a-zA-Z0-9-_]/g, '_'));
+
+  function renderBillHistory() {
+    const f = getBillFilters();
+    const tbody = $('#tableBills tbody');
+    let filtered = bills.filter(r => {
+      if (f.dateFrom && r.date < f.dateFrom) return false;
+      if (f.dateTo && r.date > f.dateTo) return false;
+      if (f.type && r.type !== f.type) return false;
+      if (f.search) {
+        const hay = ((r.billNo || '') + ' ' + (r.customer || '') + ' ' + (r.paidTo || '')).toLowerCase();
+        if (!hay.includes(f.search)) return false;
+      }
+      return true;
+    });
+    filtered = applySort(filtered, 'tableBills', (r, col) => {
+      if (col === 'amount') return r.grandTotal || 0;
+      if (col === 'party') return r.customer || r.paidTo || '';
+      return r[col] || '';
+    });
+    lastFilteredBills = filtered;
+    tbody.innerHTML = filtered.length === 0
+      ? '<tr><td colspan="6" style="text-align:center;color:var(--text-light);padding:32px">No bills generated yet</td></tr>'
+      : filtered.map(r => `<tr>
+          <td>${sanitize(fmtDate(r.date))}</td>
+          <td>${sanitize(r.billNo || '—')}</td>
+          <td>${r.type === 'customer' ? 'Customer' : 'Expense'}</td>
+          <td>${sanitize(r.customer || r.paidTo || '—')}</td>
+          <td>${fmt(r.grandTotal || 0)}</td>
+          <td>
+            <button class="btn-edit bill-view-btn" data-id="${sanitize(r.id)}">View</button>
+            <button class="btn-edit bill-pdf-btn" data-id="${sanitize(r.id)}">PDF</button>
+            <button class="btn-edit bill-print-btn" data-id="${sanitize(r.id)}">Print</button>
+            <button class="btn-delete" data-id="${sanitize(r.id)}" data-type="bill">Delete</button>
+          </td>
+        </tr>`).join('');
+  }
+
+  // Bill history filter listeners
+  ['filterBillDateFrom','filterBillDateTo','filterBillSearch'].forEach(id => {
+    $('#' + id).addEventListener('input', () => renderBillHistory());
   });
-  $('#ebPrint').addEventListener('click', async () => { await ensureEbBillNo(); printBill(buildExpenseBillHTML()); });
+  $('#filterBillType').addEventListener('change', () => renderBillHistory());
+  $('#clearFiltersBills').addEventListener('click', () => {
+    ['filterBillDateFrom','filterBillDateTo','filterBillSearch'].forEach(id => { $('#' + id).value = ''; });
+    $('#filterBillType').value = '';
+    renderBillHistory();
+  });
+
+  // Bill history action buttons (delegated)
+  $('#tableBills').addEventListener('click', (e) => {
+    const btn = e.target;
+    const id = btn.dataset?.id;
+    if (!id) return;
+    const bill = bills.find(b => b.id === id);
+    if (!bill) return;
+    const html = billHTMLFromData(bill);
+
+    if (btn.classList.contains('bill-view-btn')) {
+      showBillPreview(html);
+    } else if (btn.classList.contains('bill-pdf-btn')) {
+      const fname = 'RTCIT_' + (bill.billNo || 'Bill').replace(/[^a-zA-Z0-9-_]/g, '_');
+      downloadBillPdf(html, fname);
+      logAuthEvent(auth.currentUser?.email, 'Downloaded Bill PDF: ' + bill.billNo);
+    } else if (btn.classList.contains('bill-print-btn')) {
+      printBill(html);
+      logAuthEvent(auth.currentUser?.email, 'Printed Bill: ' + bill.billNo);
+    }
+  });
+
+  // Delete bill (handled by existing delegated delete handler)
+  // We need to add bill type to the existing delete handler
+
+  // Export bills
+  $('#btnExportBills').addEventListener('click', () => {
+    exportXlsx(
+      lastFilteredBills.map(r => [fmtDate(r.date), r.billNo, r.type === 'customer' ? 'Customer' : 'Expense',
+        r.customer || r.paidTo || '', r.grandTotal || 0, r.notes || '']),
+      ['Date','Bill No.','Type','Customer / Paid To','Amount (₹)','Notes'],
+      'canteen_bills'
+    );
+    logAuthEvent(auth.currentUser?.email, 'Exported Bills XLSX');
+  });
 
   async function renderBillGenerator() {
     // Set default dates if empty
@@ -1504,6 +1692,7 @@
     // Auto-assign next bill numbers
     if (!$('#cbBillNo').value) $('#cbBillNo').value = await nextBillNo('CB');
     if (!$('#ebBillNo').value) $('#ebBillNo').value = await nextBillNo('GE');
+    renderBillHistory();
   }
 
   // ── P&L Computation (Financial Year: Apr–Mar) ────
@@ -2471,7 +2660,7 @@
     $('#eraseStatus').style.color = 'var(--text-light)';
 
     try {
-      const collections = [colItemsIn, colItemsOut, colExpenses, colSales];
+      const collections = [colItemsIn, colItemsOut, colExpenses, colSales, colBills];
       let totalDeleted = 0;
 
       for (const col of collections) {
@@ -2571,7 +2760,7 @@
     const email = auth.currentUser?.email;
     logAuthEvent(email, 'Logout').finally(() => {
       auth.signOut().then(() => {
-        itemsIn = []; itemsOut = []; expenses = []; sales = [];
+        itemsIn = []; itemsOut = []; expenses = []; sales = []; bills = [];
         showLogin();
         toast('Logged out');
       });
