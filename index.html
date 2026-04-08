@@ -889,13 +889,13 @@
             <h3 class="section-heading"><span class="section-icon">🛍️</span> Purchase Analysis</h3>
             <div class="table-card">
               <div class="table-header"><h3>Purchases — by Item</h3></div>
-              <div class="table-scroll">
+              <div class="table-wrapper">
                 <table id="rptPurchaseTable"><thead><tr><th>Item</th><th>Brand</th><th>Supplier</th><th>Qty</th><th>Unit</th><th>Total Cost (₹)</th><th>Avg Rate (₹)</th></tr></thead><tbody></tbody><tfoot><tr id="rptPurchaseTotalRow"></tr></tfoot></table>
               </div>
             </div>
             <div class="table-card">
               <div class="table-header"><h3>Purchases — by Supplier</h3></div>
-              <div class="table-scroll">
+              <div class="table-wrapper">
                 <table id="rptSupplierTable"><thead><tr><th>Supplier</th><th>Items</th><th>Total Qty</th><th>Total Cost (₹)</th><th>% of Purchases</th></tr></thead><tbody></tbody><tfoot><tr id="rptSupplierTotalRow"></tr></tfoot></table>
               </div>
             </div>
@@ -906,20 +906,20 @@
             <h3 class="section-heading"><span class="section-icon">🛒</span> Sales Analysis</h3>
             <div class="table-card">
               <div class="table-header"><h3>Sales — by Item</h3></div>
-              <div class="table-scroll">
+              <div class="table-wrapper">
                 <table id="rptSalesTable"><thead><tr><th>Item</th><th>Category</th><th>Qty Sold</th><th>Unit</th><th>Total Amount (₹)</th><th>Avg Rate (₹)</th></tr></thead><tbody></tbody><tfoot><tr id="rptSalesTotalRow"></tr></tfoot></table>
               </div>
             </div>
             <div class="charts-row">
               <div class="table-card" style="margin-bottom:0">
                 <div class="table-header"><h3>Sales — by Person</h3></div>
-                <div class="table-scroll">
+                <div class="table-wrapper">
                   <table id="rptPersonTable"><thead><tr><th>Person</th><th>Transactions</th><th>Amount (₹)</th><th>% Share</th></tr></thead><tbody></tbody><tfoot><tr id="rptPersonTotalRow"></tr></tfoot></table>
                 </div>
               </div>
               <div class="table-card" style="margin-bottom:0">
                 <div class="table-header"><h3>Sales — by Category</h3></div>
-                <div class="table-scroll">
+                <div class="table-wrapper">
                   <table id="rptCategoryTable"><thead><tr><th>Category</th><th>Transactions</th><th>Amount (₹)</th><th>% Share</th></tr></thead><tbody></tbody><tfoot><tr id="rptCategoryTotalRow"></tr></tfoot></table>
                 </div>
               </div>
@@ -931,7 +931,7 @@
             <h3 class="section-heading"><span class="section-icon">💳</span> Expense Analysis</h3>
             <div class="table-card">
               <div class="table-header"><h3>Expense Breakdown — by Category</h3></div>
-              <div class="table-scroll">
+              <div class="table-wrapper">
                 <table id="rptExpTable"><thead><tr><th>Category</th><th>Count</th><th>Total Amount (₹)</th><th>% of Expenses</th></tr></thead><tbody></tbody><tfoot><tr id="rptExpTotalRow"></tr></tfoot></table>
               </div>
             </div>
@@ -941,7 +941,7 @@
           <div class="dash-section">
             <h3 class="section-heading"><span class="section-icon">📅</span> Day-wise Breakdown</h3>
             <div class="table-card">
-              <div class="table-scroll">
+              <div class="table-wrapper">
                 <table id="rptDailyTable"><thead><tr><th>Date</th><th>Revenue (₹)</th><th>Purchases (₹)</th><th>Expenses (₹)</th><th>Total Cost (₹)</th><th>Net P&amp;L (₹)</th></tr></thead><tbody></tbody><tfoot><tr id="rptDailyTotalRow"></tr></tfoot></table>
               </div>
             </div>
