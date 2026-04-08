@@ -137,7 +137,7 @@
   }
 
   $('#dateDisplay').textContent = new Date().toLocaleDateString('en-IN', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
-  $$('input[type="date"]').forEach(inp => inp.value = today());
+  ['#inDate','#outDate','#expDate','#saleDate'].forEach(id => $(id).value = today());
 
   // ── Real-time Firestore listeners ─────────────────
   function startListeners() {
@@ -192,7 +192,7 @@
     if (type === 'out')  { editingOutId = null;   $('#formItemsOut').reset(); $('#outSubmitBtn').textContent = '+ Add Item Out'; }
     if (type === 'exp')  { editingExpId = null;   $('#formExpenses').reset(); $('#expSubmitBtn').textContent = '+ Add Expense'; }
     if (type === 'sale') { editingSaleId = null;  $('#formSales').reset();    $('#saleSubmitBtn').textContent = '+ Add Sale'; }
-    $$('input[type="date"]').forEach(inp => inp.value = today());
+    ['#inDate','#outDate','#expDate','#saleDate'].forEach(id => $(id).value = today());
   }
 
   // ── Edit handler (delegated) ──────────────────────
@@ -272,7 +272,7 @@
     } else {
       colItemsIn.add(record).then(() => {
         e.target.reset();
-        $$('input[type="date"]').forEach(inp => inp.value = today());
+        $('#inDate').value = today();
         toast('Item added to stock');
       }).catch(() => toast('Failed to save', true));
     }
@@ -502,7 +502,7 @@
     } else {
       colItemsOut.add(record).then(() => {
         e.target.reset();
-        $$('input[type="date"]').forEach(inp => inp.value = today());
+        $('#outDate').value = today();
         toast('Sale recorded');
       }).catch(() => toast('Failed to save', true));
     }
@@ -760,7 +760,7 @@
     } else {
       colExpenses.add(record).then(() => {
         e.target.reset();
-        $$('input[type="date"]').forEach(inp => inp.value = today());
+        $('#expDate').value = today();
         toast('Expense recorded');
       }).catch(() => toast('Failed to save', true));
     }
@@ -1046,7 +1046,7 @@
     } else {
       colSales.add(record).then(() => {
         e.target.reset();
-        $$('input[type="date"]').forEach(inp => inp.value = today());
+        $('#saleDate').value = today();
         toast('Sale recorded');
       }).catch(() => toast('Failed to save', true));
     }
