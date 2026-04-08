@@ -1669,6 +1669,7 @@
       dateFrom: $('#filterBillDateFrom').value,
       dateTo: $('#filterBillDateTo').value,
       type: $('#filterBillType').value,
+      status: $('#filterBillStatus').value,
       search: $('#filterBillSearch').value.trim().toLowerCase()
     };
   }
@@ -1680,6 +1681,8 @@
       if (f.dateFrom && r.date < f.dateFrom) return false;
       if (f.dateTo && r.date > f.dateTo) return false;
       if (f.type && r.type !== f.type) return false;
+      if (f.status === 'active' && r.cancelled) return false;
+      if (f.status === 'cancelled' && !r.cancelled) return false;
       if (f.search) {
         const hay = ((r.billNo || '') + ' ' + (r.customer || '') + ' ' + (r.billedTo || '')).toLowerCase();
         if (!hay.includes(f.search)) return false;
@@ -1735,9 +1738,11 @@
     $('#' + id).addEventListener('input', () => renderBillHistory());
   });
   $('#filterBillType').addEventListener('change', () => renderBillHistory());
+  $('#filterBillStatus').addEventListener('change', () => renderBillHistory());
   $('#clearFiltersBills').addEventListener('click', () => {
     ['filterBillDateFrom','filterBillDateTo','filterBillSearch'].forEach(id => { $('#' + id).value = ''; });
     $('#filterBillType').value = '';
+    $('#filterBillStatus').value = '';
     renderBillHistory();
   });
 
