@@ -1167,6 +1167,35 @@
 
   <!-- Import Modal -->
   <div class="modal-overlay" id="importModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="importModalTitle">Import Data</h3>
+        <button class="modal-close" id="importModalClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom:12px;font-size:.88rem;color:var(--text-light)">Upload an Excel file (.xlsx) to bulk-import records. The file must match the expected column format.</p>
+        <button class="btn-secondary btn-sm" id="btnDownloadSample" style="margin-bottom:16px">📄 Download Sample Template</button>
+        <div class="import-dropzone" id="importDropzone">
+          <input type="file" id="importFileInput" accept=".xlsx,.xls" style="display:none" />
+          <div class="dropzone-content">
+            <span style="font-size:2rem">📂</span>
+            <p>Drag & drop your .xlsx file here</p>
+            <p style="font-size:.78rem;color:var(--text-light)">or click to browse</p>
+          </div>
+        </div>
+        <div id="importPreview" style="display:none;margin-top:16px">
+          <p style="font-weight:600;margin-bottom:8px"><span id="importRowCount">0</span> rows found</p>
+          <div class="table-wrapper" style="max-height:240px;overflow-y:auto">
+            <table id="importPreviewTable"><thead></thead><tbody></tbody></table>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+            <button class="btn-secondary btn-sm" id="btnCancelImport">Cancel</button>
+            <button class="btn-primary btn-sm" id="btnConfirmImport">✅ Import <span id="importConfirmCount">0</span> rows</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Erase Data Modal -->
   <div class="modal-overlay" id="eraseModal">
@@ -1217,35 +1246,6 @@
         <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
           <button class="btn-secondary btn-sm" id="btnEraseCancel">Cancel</button>
           <button class="btn-primary btn-sm" id="btnEraseConfirm" style="background:var(--red);border-color:var(--red)">🗑️ Erase Data</button>
-        </div>
-      </div>
-    </div>
-  </div>
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3 id="importModalTitle">Import Data</h3>
-        <button class="modal-close" id="importModalClose">&times;</button>
-      </div>
-      <div class="modal-body">
-        <p style="margin-bottom:12px;font-size:.88rem;color:var(--text-light)">Upload an Excel file (.xlsx) to bulk-import records. The file must match the expected column format.</p>
-        <button class="btn-secondary btn-sm" id="btnDownloadSample" style="margin-bottom:16px">📄 Download Sample Template</button>
-        <div class="import-dropzone" id="importDropzone">
-          <input type="file" id="importFileInput" accept=".xlsx,.xls" style="display:none" />
-          <div class="dropzone-content">
-            <span style="font-size:2rem">📂</span>
-            <p>Drag & drop your .xlsx file here</p>
-            <p style="font-size:.78rem;color:var(--text-light)">or click to browse</p>
-          </div>
-        </div>
-        <div id="importPreview" style="display:none;margin-top:16px">
-          <p style="font-weight:600;margin-bottom:8px"><span id="importRowCount">0</span> rows found</p>
-          <div class="table-wrapper" style="max-height:240px;overflow-y:auto">
-            <table id="importPreviewTable"><thead></thead><tbody></tbody></table>
-          </div>
-          <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
-            <button class="btn-secondary btn-sm" id="btnCancelImport">Cancel</button>
-            <button class="btn-primary btn-sm" id="btnConfirmImport">✅ Import <span id="importConfirmCount">0</span> rows</button>
-          </div>
         </div>
       </div>
     </div>
