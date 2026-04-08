@@ -111,10 +111,18 @@
     if (page === 'reports')   renderReport();
     if (page === 'changelog') renderAuthLog();
     $('#sidebar').classList.remove('open');
+    $('#sidebarOverlay').classList.remove('active');
   }
 
   navItems.forEach(n => n.addEventListener('click', (e) => { e.preventDefault(); navigate(n.dataset.page); }));
-  $('#menuToggle').addEventListener('click', () => $('#sidebar').classList.toggle('open'));
+  $('#menuToggle').addEventListener('click', () => {
+    $('#sidebar').classList.toggle('open');
+    $('#sidebarOverlay').classList.toggle('active');
+  });
+  $('#sidebarOverlay').addEventListener('click', () => {
+    $('#sidebar').classList.remove('open');
+    $('#sidebarOverlay').classList.remove('active');
+  });
 
   $('#dateDisplay').textContent = new Date().toLocaleDateString('en-IN', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
   $$('input[type="date"]').forEach(inp => inp.value = today());
