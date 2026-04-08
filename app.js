@@ -1345,7 +1345,7 @@
     return `<div class="bill-print" id="billPrintArea">
       <div class="bill-header">
         <h2>RTCIT Food Court</h2>
-        <p>Ram Tahal Choudhary Institute of Technology, Ranchi</p>
+        <p>Anandi, Ormanjhi, Ranchi</p>
       </div>
       <h3 class="bill-title">CUSTOMER BILL</h3>
       <div class="bill-meta">
@@ -1365,8 +1365,8 @@
       </div>
       ${$('#cbNotes').value ? `<div class="bill-notes"><strong>Notes:</strong> ${sanitize($('#cbNotes').value)}</div>` : ''}
       <div class="bill-footer">
-        <p>Thank you for your patronage!</p>
-        <div class="bill-sig"><div>Authorized Signature</div></div>
+        <p>Thank you. Visit again.</p>
+        <p class="bill-auto-note">This is a computer-generated bill and does not require a signature.</p>
       </div>
     </div>`;
   }
@@ -1385,7 +1385,7 @@
     return `<div class="bill-print" id="billPrintArea">
       <div class="bill-header">
         <h2>RTCIT Food Court</h2>
-        <p>Ram Tahal Choudhary Institute of Technology, Ranchi</p>
+        <p>Anandi, Ormanjhi, Ranchi</p>
       </div>
       <h3 class="bill-title">EXPENSE BILL / VOUCHER</h3>
       <div class="bill-meta">
@@ -1404,10 +1404,7 @@
       </div>
       ${$('#ebNotes').value ? `<div class="bill-notes"><strong>Notes:</strong> ${sanitize($('#ebNotes').value)}</div>` : ''}
       <div class="bill-footer">
-        <div class="bill-sig-row">
-          <div class="bill-sig"><div>Received By</div></div>
-          <div class="bill-sig"><div>Authorized Signature</div></div>
-        </div>
+        <p class="bill-auto-note">This is a computer-generated bill and does not require a signature.</p>
       </div>
     </div>`;
   }
@@ -1467,9 +1464,8 @@
         .bill-total-row{display:flex;justify-content:flex-end;gap:32px;padding:4px 10px}
         .bill-grand-total{font-weight:700;font-size:16px;border-top:2px solid #1e293b;margin-top:4px;padding-top:8px}
         .bill-notes{font-size:13px;color:#475569;margin:12px 0;padding:8px;background:#f8fafc;border-radius:4px}
-        .bill-footer{margin-top:40px;font-size:13px;color:#64748b;text-align:center}
-        .bill-sig,.bill-sig-row div{margin-top:48px;border-top:1px solid #94a3b8;padding-top:4px;display:inline-block;min-width:180px}
-        .bill-sig-row{display:flex;justify-content:space-between}
+        .bill-footer{margin-top:32px;font-size:13px;color:#64748b;text-align:center}
+        .bill-auto-note{font-size:11px;color:#94a3b8;margin-top:8px;font-style:italic}
         @media print{body{padding:0}@page{margin:15mm}}
       </style></head><body>${html}</body></html>`);
     w.document.close();

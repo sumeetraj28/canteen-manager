@@ -472,9 +472,8 @@ h4.collapsible-toggle.collapsed::after{
 .bill-total-row{display:flex;justify-content:flex-end;gap:32px;padding:4px 10px}
 .bill-grand-total{font-weight:700;font-size:16px;border-top:2px solid #1e293b;margin-top:4px;padding-top:8px}
 .bill-notes{font-size:13px;color:#475569;margin:12px 0;padding:8px;background:#f8fafc;border-radius:4px}
-.bill-footer{margin-top:40px;font-size:13px;color:#64748b;text-align:center}
-.bill-sig{margin-top:48px;border-top:1px solid #94a3b8;padding-top:4px;display:inline-block;min-width:180px}
-.bill-sig-row{display:flex;justify-content:space-between}
+.bill-footer{margin-top:32px;font-size:13px;color:#64748b;text-align:center}
+.bill-auto-note{font-size:11px;color:#94a3b8;margin-top:8px;font-style:italic}
 
 /* ── Date input DD/MM/YYYY overlay ────────────────── */
 .date-wrap{position:relative;display:inline-flex}
