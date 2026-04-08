@@ -137,6 +137,26 @@
   }
 
   $('#dateDisplay').textContent = new Date().toLocaleDateString('en-IN', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+  // ── Wrap date inputs with DD/MM/YYYY display ──────
+  $$('input[type="date"]').forEach(inp => {
+    const wrap = document.createElement('div');
+    wrap.className = 'date-wrap';
+    inp.parentNode.insertBefore(wrap, inp);
+    wrap.appendChild(inp);
+    const display = document.createElement('span');
+    display.className = 'date-display';
+    wrap.appendChild(display);
+    const desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+    function upd() { display.textContent = desc.get.call(inp) ? fmtDate(desc.get.call(inp)) : ''; }
+    Object.defineProperty(inp, 'value', {
+      get() { return desc.get.call(this); },
+      set(v) { desc.set.call(this, v); upd(); }
+    });
+    inp.addEventListener('input', upd);
+    inp.addEventListener('change', upd);
+  });
+
   ['#inDate','#outDate','#expDate','#saleDate'].forEach(id => $(id).value = today());
 
   // ── Real-time Firestore listeners ─────────────────
