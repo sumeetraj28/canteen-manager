@@ -423,3 +423,23 @@ input[readonly]{background:#e9ecef;cursor:default}
   .modal-card{max-width:100%}
   .modal-header,.modal-body{padding:14px 16px}
 }
+
+/* ── Collapsible sections ─────────────────────────── */
+.collapsible-toggle{cursor:pointer;user-select:none;position:relative}
+.collapsible-toggle::after{
+  content:'▾';font-size:.75em;margin-left:8px;
+  display:inline-block;transition:transform .25s ease;
+  opacity:.45;
+}
+.collapsed > .collapsible-toggle::after,
+h4.collapsible-toggle.collapsed::after{
+  transform:rotate(-90deg);
+}
+/* dash-section / table-card: hide everything after the toggle header */
+.dash-section.collapsed > *:not(.section-heading),
+.table-card.collapsed > *:not(.table-header){display:none}
+/* h4 sub-sections: hide next sibling via JS (no CSS-only way) */
+.table-header.collapsible-toggle{cursor:pointer}
+.table-header.collapsible-toggle h3{pointer-events:none}
+.section-heading.collapsible-toggle:hover,
+.table-header.collapsible-toggle:hover{opacity:.8}

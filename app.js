@@ -2585,4 +2585,66 @@
   bindSortHeaders('tablePnl', drawDashboard);
   bindSortHeaders('tableAuthLog', renderAuthLog);
 
+  // ── Collapsible sections ──────────────────────────
+  (function initCollapsible() {
+    const STORE_KEY = 'collapsedSections';
+    const saved = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
+
+    function collapseKey(el) {
+      // Use trimmed text of the heading as key
+      const h = el.querySelector('h3') || el;
+      return h.textContent.trim().replace(/\s+/g, ' ');
+    }
+
+    function persist() {
+      const state = {};
+      $$('.dash-section.collapsed, .table-card.collapsed').forEach(el => {
+        const toggle = el.querySelector('.collapsible-toggle');
+        if (toggle) state[collapseKey(toggle)] = true;
+      });
+      $$('h4.collapsible-toggle.collapsed').forEach(h => {
+        state[collapseKey(h)] = true;
+      });
+      localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    }
+
+    // 1. Dashboard / Report sections: .dash-section > .section-heading
+    $$('.dash-section > .section-heading').forEach(h => {
+      h.classList.add('collapsible-toggle');
+      if (saved[collapseKey(h)]) h.parentElement.classList.add('collapsed');
+      h.addEventListener('click', () => {
+        h.parentElement.classList.toggle('collapsed');
+        persist();
+      });
+    });
+
+    // 2. Table cards: .table-card > .table-header
+    $$('.table-card > .table-header').forEach(th => {
+      th.classList.add('collapsible-toggle');
+      if (saved[collapseKey(th)]) th.parentElement.classList.add('collapsed');
+      th.addEventListener('click', (e) => {
+        if (e.target.closest('button, select, input, a')) return;
+        th.parentElement.classList.toggle('collapsed');
+        persist();
+      });
+    });
+
+    // 3. H4 sub-sections (month-wise tables inside table-cards)
+    $$('.table-card h4').forEach(h => {
+      h.classList.add('collapsible-toggle');
+      h.style.cursor = 'pointer';
+      if (saved[collapseKey(h)]) {
+        h.classList.add('collapsed');
+        const next = h.nextElementSibling;
+        if (next) next.style.display = 'none';
+      }
+      h.addEventListener('click', () => {
+        h.classList.toggle('collapsed');
+        const next = h.nextElementSibling;
+        if (next) next.style.display = h.classList.contains('collapsed') ? 'none' : '';
+        persist();
+      });
+    });
+  })();
+
 })();
