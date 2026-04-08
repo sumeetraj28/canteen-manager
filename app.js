@@ -8,6 +8,7 @@
   const MONTHS = ['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'];
 
   function fmt(n) { return '₹' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 }); }
+  function fmtDate(d) { if (!d) return ''; const [y, m, dd] = d.split('-'); return dd + '/' + m + '/' + y; }
   function today() { return new Date().toISOString().slice(0, 10); }
   function sanitize(str) {
     const div = document.createElement('div');
@@ -308,7 +309,7 @@
     tbody.innerHTML = filtered.length === 0
       ? '<tr><td colspan="11" style="text-align:center;color:var(--text-light);padding:32px">No purchase records yet</td></tr>'
       : filtered.map(r => `<tr>
-          <td>${sanitize(r.date)}</td><td>${sanitize(r.billNo || '—')}</td><td>${sanitize(r.item)}</td>
+          <td>${fmtDate(r.date)}</td><td>${sanitize(r.billNo || '—')}</td><td>${sanitize(r.item)}</td>
           <td>${sanitize(r.brand || '—')}</td><td>${sanitize(r.supplier || '—')}</td>
           <td>${r.qty}</td><td>${sanitize(r.unit)}</td>
           <td>${fmt(r.rate || 0)}</td><td>${fmt(r.cost)}</td>
@@ -536,7 +537,7 @@
     tbody.innerHTML = filtered.length === 0
       ? '<tr><td colspan="12" style="text-align:center;color:var(--text-light);padding:32px">No sales records yet</td></tr>'
       : filtered.map(r => `<tr>
-          <td>${sanitize(r.date)}</td><td>${sanitize(r.item)}</td>
+          <td>${fmtDate(r.date)}</td><td>${sanitize(r.item)}</td>
           <td>${sanitize(r.brand || '—')}</td><td>${sanitize(r.supplier || '—')}</td>
           <td>${r.qty}</td><td>${sanitize(r.unit)}</td>
           <td>${fmt(r.rate || 0)}</td><td>${fmt(r.amount)}</td>
@@ -794,7 +795,7 @@
     tbody.innerHTML = filtered.length === 0
       ? '<tr><td colspan="5" style="text-align:center;color:var(--text-light);padding:32px">No expenses recorded yet</td></tr>'
       : filtered.map(r => `<tr>
-          <td>${sanitize(r.date)}</td><td>${sanitize(r.category)}</td><td>${fmt(r.amount)}</td>
+          <td>${fmtDate(r.date)}</td><td>${sanitize(r.category)}</td><td>${fmt(r.amount)}</td>
           <td>${sanitize(r.note || '—')}</td>
           <td><button class="btn-edit" data-id="${sanitize(r.id)}" data-type="exp">Edit</button> <button class="btn-delete" data-id="${sanitize(r.id)}" data-type="exp">Delete</button></td>
         </tr>`).join('');
@@ -1000,7 +1001,7 @@
 
   $('#btnExportItemsIn').addEventListener('click', () => {
     exportXlsx(
-      lastFilteredItemsIn.map(r => [r.date, r.billNo || '', r.item, r.brand || '', r.supplier || '', r.qty, r.unit, r.rate || 0, r.cost, r.remark || '']),
+      lastFilteredItemsIn.map(r => [fmtDate(r.date), r.billNo || '', r.item, r.brand || '', r.supplier || '', r.qty, r.unit, r.rate || 0, r.cost, r.remark || '']),
       ['Date','Bill No','Item','Brand','Supplier','Qty','Unit','Rate','Cost','Remark'],
       'canteen_items_in'
     );
@@ -1009,7 +1010,7 @@
 
   $('#btnExportItemsOut').addEventListener('click', () => {
     exportXlsx(
-      lastFilteredItemsOut.map(r => [r.date, r.item, r.brand || '', r.supplier || '', r.qty, r.unit, r.rate || 0, r.amount, r.category || '', r.person || '', r.customer || '']),
+      lastFilteredItemsOut.map(r => [fmtDate(r.date), r.item, r.brand || '', r.supplier || '', r.qty, r.unit, r.rate || 0, r.amount, r.category || '', r.person || '', r.customer || '']),
       ['Date','Item','Brand','Supplier','Qty','Unit','Rate','Amount','Category','Person','Remark'],
       'canteen_items_out'
     );
@@ -1018,7 +1019,7 @@
 
   $('#btnExportExpenses').addEventListener('click', () => {
     exportXlsx(
-      lastFilteredExpenses.map(r => [r.date, r.category, r.amount, r.note || '']),
+      lastFilteredExpenses.map(r => [fmtDate(r.date), r.category, r.amount, r.note || '']),
       ['Date','Category','Amount','Description'],
       'canteen_expenses'
     );
@@ -1078,7 +1079,7 @@
     tbody.innerHTML = filtered.length === 0
       ? '<tr><td colspan="5" style="text-align:center;color:var(--text-light);padding:32px">No sales recorded yet</td></tr>'
       : filtered.map(r => `<tr>
-          <td>${sanitize(r.date)}</td><td>${sanitize(r.type)}</td><td>${fmt(r.amount)}</td>
+          <td>${fmtDate(r.date)}</td><td>${sanitize(r.type)}</td><td>${fmt(r.amount)}</td>
           <td>${sanitize(r.details || '—')}</td>
           <td><button class="btn-edit" data-id="${sanitize(r.id)}" data-type="sale">Edit</button> <button class="btn-delete" data-id="${sanitize(r.id)}" data-type="sale">Delete</button></td>
         </tr>`).join('');
@@ -1098,7 +1099,7 @@
 
   $('#btnExportSales').addEventListener('click', () => {
     exportXlsx(
-      lastFilteredSales.map(r => [r.date, r.type, r.amount, r.details || '']),
+      lastFilteredSales.map(r => [fmtDate(r.date), r.type, r.amount, r.details || '']),
       ['Date','Sale Type','Amount','Details'],
       'canteen_sales'
     );
@@ -1684,7 +1685,7 @@
     $('#recentTransactions tbody').innerHTML = recent.length === 0
       ? '<tr><td colspan="5" style="text-align:center;color:var(--text-light);padding:32px">No transactions yet</td></tr>'
       : recent.map(r => `<tr>
-          <td>${sanitize(r.date)}</td>
+          <td>${fmtDate(r.date)}</td>
           <td><span class="status-badge ${r.type === 'Sale' ? 'status-ok' : r.type === 'Purchase' ? 'status-low' : 'status-out'}">${r.type}</span></td>
           <td>${sanitize(r.item)}</td><td>${r.qty}</td>
           <td class="${r.amount >= 0 ? 'profit' : 'loss'}">${fmt(Math.abs(r.amount))}</td>
@@ -1745,8 +1746,7 @@
   }
 
   function formatRange(from, to) {
-    const opts = { day: 'numeric', month: 'short', year: 'numeric' };
-    return new Date(from).toLocaleDateString('en-IN', opts) + '  →  ' + new Date(to).toLocaleDateString('en-IN', opts);
+    return fmtDate(from) + '  →  ' + fmtDate(to);
   }
 
   // Toggle custom date pickers
@@ -1984,7 +1984,7 @@
     const dayTotals = dayRows.reduce((t, r) => ({ revenue: t.revenue + r.revenue, purchases: t.purchases + r.purchases, expenses: t.expenses + r.expenses, totalCost: t.totalCost + r.totalCost, net: t.net + r.net }), { revenue: 0, purchases: 0, expenses: 0, totalCost: 0, net: 0 });
     $('#rptDailyTable tbody').innerHTML = dayRows.length === 0
       ? '<tr><td colspan="6" style="text-align:center;color:var(--text-light);padding:24px">No data</td></tr>'
-      : dayRows.map(r => `<tr><td>${r.date}</td><td>${fmt(r.revenue)}</td><td>${fmt(r.purchases)}</td><td>${fmt(r.expenses)}</td><td>${fmt(r.totalCost)}</td><td class="${r.net >= 0 ? 'profit' : 'loss'}">${fmt(r.net)}</td></tr>`).join('');
+      : dayRows.map(r => `<tr><td>${fmtDate(r.date)}</td><td>${fmt(r.revenue)}</td><td>${fmt(r.purchases)}</td><td>${fmt(r.expenses)}</td><td>${fmt(r.totalCost)}</td><td class="${r.net >= 0 ? 'profit' : 'loss'}">${fmt(r.net)}</td></tr>`).join('');
     $('#rptDailyTotalRow').innerHTML = dayRows.length
       ? `<td><strong>TOTAL</strong></td><td><strong>${fmt(dayTotals.revenue)}</strong></td><td><strong>${fmt(dayTotals.purchases)}</strong></td><td><strong>${fmt(dayTotals.expenses)}</strong></td><td><strong>${fmt(dayTotals.totalCost)}</strong></td><td class="${dayTotals.net >= 0 ? 'profit' : 'loss'}"><strong>${fmt(dayTotals.net)}</strong></td>` : '';
 
