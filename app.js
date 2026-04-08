@@ -160,7 +160,7 @@
     inp.addEventListener('change', upd);
   });
 
-  ['#inDate','#outDate','#expDate','#saleDate','#cbDate','#ebDate'].forEach(id => $(id).value = today());
+  ['#inDate','#outDate','#expDate','#saleDate','#cbDate'].forEach(id => $(id).value = today());
 
   // ── Real-time Firestore listeners ─────────────────
   let unsubs = [];
@@ -235,7 +235,7 @@
     if (type === 'out')  { editingOutId = null;   $('#formItemsOut').reset(); $('#outSubmitBtn').textContent = '+ Add Item Out'; }
     if (type === 'exp')  { editingExpId = null;   $('#formExpenses').reset(); $('#expSubmitBtn').textContent = '+ Add Expense'; }
     if (type === 'sale') { editingSaleId = null;  $('#formSales').reset();    $('#saleSubmitBtn').textContent = '+ Add Sale'; }
-    ['#inDate','#outDate','#expDate','#saleDate','#cbDate','#ebDate'].forEach(id => $(id).value = today());
+    ['#inDate','#outDate','#expDate','#saleDate','#cbDate'].forEach(id => $(id).value = today());
   }
 
   // ── Edit handler (delegated) ──────────────────────
@@ -930,13 +930,12 @@
     if (!confirm('Delete this record?')) return;
     const id = e.target.dataset.id;
     const type = e.target.dataset.type;
-    const typeLabels = { in: 'Purchase', out: 'Sale', exp: 'Expense', sale: 'Sale Record', bill: 'Bill' };
+    const typeLabels = { in: 'Purchase', out: 'Sale', exp: 'Expense', sale: 'Sale Record' };
     let promise;
     if (type === 'in')  promise = colItemsIn.doc(id).delete();
     if (type === 'out') promise = colItemsOut.doc(id).delete();
     if (type === 'exp') promise = colExpenses.doc(id).delete();
     if (type === 'sale') promise = colSales.doc(id).delete();
-    if (type === 'bill') promise = colBills.doc(id).delete();
     if (promise) promise.then(() => {
       toast('Record deleted');
       logAuthEvent(auth.currentUser?.email, 'Deleted ' + (typeLabels[type] || type) + ' #' + id.slice(0, 6));
@@ -1258,11 +1257,10 @@
     return 'FC/' + prefix + '/' + fy + '/' + mm + '/' + String(num).padStart(3, '0');
   }
 
-  // Toggle between Customer Bill, Expense Bill, and Invoice forms
+  // Toggle between Customer Bill and Invoice forms
   $('#billType').addEventListener('change', () => {
     const v = $('#billType').value;
     $('#billCustomerForm').style.display = v === 'customer' ? '' : 'none';
-    $('#billExpenseForm').style.display = v === 'expense' ? '' : 'none';
     $('#billInvoiceForm').style.display = v === 'invoice' ? '' : 'none';
     $('#billPreviewCard').style.display = 'none';
   });
@@ -1305,36 +1303,6 @@
     }
   });
   $('#cbDiscount').addEventListener('input', cbRecalc);
-
-  // ── Expense Bill: dynamic item rows ───────────────
-  function ebRecalc() {
-    let total = 0;
-    $$('#ebItems .bill-item-row').forEach(row => {
-      total += parseFloat(row.querySelector('.eb-item-amt').value) || 0;
-    });
-    $('#ebTotal').value = fmt(total);
-  }
-
-  function ebMakeRow() {
-    const row = document.createElement('div');
-    row.className = 'bill-item-row';
-    row.innerHTML = `<input type="text" placeholder="Description" class="eb-item-desc" required />
-      <input type="number" placeholder="Amount (₹)" class="eb-item-amt" min="0" step="0.01" required />
-      <button type="button" class="btn-sm btn-danger eb-remove-row" title="Remove">&times;</button>`;
-    return row;
-  }
-
-  $('#ebAddRow').addEventListener('click', () => { $('#ebItems').appendChild(ebMakeRow()); });
-
-  $('#ebItems').addEventListener('input', (e) => {
-    if (e.target.classList.contains('eb-item-amt')) ebRecalc();
-  });
-  $('#ebItems').addEventListener('click', (e) => {
-    if (e.target.classList.contains('eb-remove-row')) {
-      if ($$('#ebItems .bill-item-row').length > 1) { e.target.closest('.bill-item-row').remove(); ebRecalc(); }
-      else toast('At least one item required', true);
-    }
-  });
 
   // ── Invoice: dynamic item rows ────────────────────
   function invRecalc() {
@@ -1406,28 +1374,6 @@
     };
   }
 
-  function collectExpenseBillData() {
-    const items = [];
-    let total = 0;
-    $$('#ebItems .bill-item-row').forEach(row => {
-      const desc = row.querySelector('.eb-item-desc').value.trim();
-      const amt = parseFloat(row.querySelector('.eb-item-amt').value) || 0;
-      if (desc && amt) { items.push({ desc, amt }); total += amt; }
-    });
-    if (!items.length) return null;
-    return {
-      type: 'expense',
-      billNo: $('#ebBillNo').value,
-      date: $('#ebDate').value,
-      paidTo: $('#ebPaidTo').value.trim(),
-      category: $('#ebCategory').value,
-      paymentMode: $('#ebPaymentMode').value,
-      items,
-      grandTotal: total,
-      notes: $('#ebNotes').value.trim()
-    };
-  }
-
   function collectInvoiceData() {
     const items = [];
     let sub = 0;
@@ -1495,37 +1441,6 @@
     </div>`;
   }
 
-  function buildExpenseBillHTMLFromData(d) {
-    const rows = d.items.map((it, i) =>
-      `<tr><td>${i + 1}</td><td>${sanitize(it.desc)}</td><td style="text-align:right">${fmt(it.amt)}</td></tr>`
-    ).join('');
-    return `<div class="bill-print" id="billPrintArea">
-      <div class="bill-header">
-        <h2>RTCIT Food Court</h2>
-        <p>Anandi, Ormanjhi, Ranchi</p>
-      </div>
-      <h3 class="bill-title">EXPENSE BILL / VOUCHER</h3>
-      <div class="bill-meta">
-        <div><strong>Voucher No:</strong> ${sanitize(d.billNo || '—')}</div>
-        <div><strong>Date:</strong> ${fmtDate(d.date) || '—'}</div>
-        <div><strong>Paid To:</strong> ${sanitize(d.paidTo)}</div>
-        <div><strong>Category:</strong> ${sanitize(d.category)}</div>
-        <div><strong>Payment Mode:</strong> ${sanitize(d.paymentMode)}</div>
-      </div>
-      <table class="bill-table">
-        <thead><tr><th>#</th><th>Description</th><th style="text-align:right">Amount</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-      <div class="bill-totals">
-        <div class="bill-total-row bill-grand-total"><span>Total Amount</span><span>${fmt(d.grandTotal)}</span></div>
-      </div>
-      ${d.notes ? `<div class="bill-notes"><strong>Notes:</strong> ${sanitize(d.notes)}</div>` : ''}
-      <div class="bill-footer">
-        <p class="bill-auto-note">This is a computer-generated bill and does not require a signature.</p>
-      </div>
-    </div>`;
-  }
-
   function buildInvoiceHTMLFromData(d) {
     const rows = d.items.map((it, i) =>
       `<tr><td>${i + 1}</td><td>${sanitize(it.name)}</td><td>${it.qty}</td><td>${fmt(it.rate)}</td><td style="text-align:right">${fmt(it.amt)}</td></tr>`
@@ -1564,9 +1479,8 @@
   }
 
   function billHTMLFromData(d) {
-    if (d.type === 'customer') return buildCustomerBillHTMLFromData(d);
     if (d.type === 'invoice') return buildInvoiceHTMLFromData(d);
-    return buildExpenseBillHTMLFromData(d);
+    return buildCustomerBillHTMLFromData(d);
   }
 
   // ── Save bill to Firestore ────────────────────────
@@ -1592,15 +1506,6 @@
     $('#cbGrandTotal').value = '₹0';
     $('#cbBillNo').value = '';
     $('#cbDate').value = today();
-  }
-
-  function resetExpenseBillForm() {
-    $('#formExpenseBill').reset();
-    $('#ebItems').innerHTML = '';
-    $('#ebItems').appendChild(ebMakeRow());
-    $('#ebTotal').value = '₹0';
-    $('#ebBillNo').value = '';
-    $('#ebDate').value = today();
   }
 
   function resetInvoiceForm() {
@@ -1678,13 +1583,13 @@
   // ── Generate bill (save + action) ─────────────────
   // ── Helper: collect + validate bill data ───────────
   async function prepareBillData(type) {
-    const prefixMap = { customer: 'CB', expense: 'GE', invoice: 'INV' };
-    const fieldMap  = { customer: '#cbBillNo', expense: '#ebBillNo', invoice: '#invBillNo' };
+    const prefixMap = { customer: 'CB', invoice: 'INV' };
+    const fieldMap  = { customer: '#cbBillNo', invoice: '#invBillNo' };
     const prefix = prefixMap[type];
     const billNoField = fieldMap[type];
     if (!$(billNoField).value) $(billNoField).value = await nextBillNo(prefix);
 
-    const collectMap = { customer: collectCustomerBillData, expense: collectExpenseBillData, invoice: collectInvoiceData };
+    const collectMap = { customer: collectCustomerBillData, invoice: collectInvoiceData };
     const data = collectMap[type]();
     if (!data) { toast('Please fill in at least one item with valid data', true); return null; }
     return data;
@@ -1705,9 +1610,6 @@
     if (type === 'customer') {
       resetCustomerBillForm();
       $('#cbBillNo').value = await nextBillNo('CB');
-    } else if (type === 'expense') {
-      resetExpenseBillForm();
-      $('#ebBillNo').value = await nextBillNo('GE');
     } else {
       resetInvoiceForm();
       $('#invBillNo').value = await nextBillNo('INV');
@@ -1739,9 +1641,6 @@
     if (type === 'customer') {
       resetCustomerBillForm();
       $('#cbBillNo').value = await nextBillNo('CB');
-    } else if (type === 'expense') {
-      resetExpenseBillForm();
-      $('#ebBillNo').value = await nextBillNo('GE');
     } else {
       resetInvoiceForm();
       $('#invBillNo').value = await nextBillNo('INV');
@@ -1756,13 +1655,6 @@
   $('#cbDownloadPdf').addEventListener('click', () => pdfBill('customer'));
   $('#cbPrint').addEventListener('click', () => printBillAction('customer'));
   $('#cbNew').addEventListener('click', () => createNewBill('customer'));
-
-  // Expense bill buttons
-  $('#ebSave').addEventListener('click', () => saveBill('expense'));
-  $('#ebPreview').addEventListener('click', () => previewBill('expense'));
-  $('#ebDownloadPdf').addEventListener('click', () => pdfBill('expense'));
-  $('#ebPrint').addEventListener('click', () => printBillAction('expense'));
-  $('#ebNew').addEventListener('click', () => createNewBill('expense'));
 
   // Invoice buttons
   $('#invSave').addEventListener('click', () => saveBill('invoice'));
@@ -1789,32 +1681,53 @@
       if (f.dateTo && r.date > f.dateTo) return false;
       if (f.type && r.type !== f.type) return false;
       if (f.search) {
-        const hay = ((r.billNo || '') + ' ' + (r.customer || '') + ' ' + (r.paidTo || '') + ' ' + (r.billedTo || '')).toLowerCase();
+        const hay = ((r.billNo || '') + ' ' + (r.customer || '') + ' ' + (r.billedTo || '')).toLowerCase();
         if (!hay.includes(f.search)) return false;
       }
       return true;
     });
     filtered = applySort(filtered, 'tableBills', (r, col) => {
       if (col === 'amount') return r.grandTotal || 0;
-      if (col === 'party') return r.customer || r.paidTo || r.billedTo || '';
+      if (col === 'party') return r.customer || r.billedTo || '';
+      if (col === 'status') return r.cancelled ? 1 : 0;
       return r[col] || '';
     });
     lastFilteredBills = filtered;
+
+    // Summary KPIs
+    const active = filtered.filter(r => !r.cancelled);
+    const cancelled = filtered.filter(r => r.cancelled);
+    const s = id => document.getElementById(id);
+    s('sumTotalBills').textContent = filtered.length;
+    s('sumActiveBills').textContent = active.length;
+    s('sumCancelledBills').textContent = cancelled.length;
+    s('sumCustomerBills').textContent = active.filter(r => r.type === 'customer').length;
+    s('sumInvoiceBills').textContent = active.filter(r => r.type === 'invoice').length;
+    s('sumBillAmount').textContent = fmt(active.reduce((t, r) => t + (r.grandTotal || 0), 0));
+
     tbody.innerHTML = filtered.length === 0
-      ? '<tr><td colspan="6" style="text-align:center;color:var(--text-light);padding:32px">No bills generated yet</td></tr>'
-      : filtered.map(r => `<tr>
+      ? '<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:32px">No bills generated yet</td></tr>'
+      : filtered.map(r => {
+          const isCancelled = !!r.cancelled;
+          const rowStyle = isCancelled ? ' style="opacity:.55;text-decoration:line-through"' : '';
+          const statusBadge = isCancelled
+            ? '<span class="status-badge status-out">Cancelled</span>'
+            : '<span class="status-badge status-ok">Active</span>';
+          return `<tr${rowStyle}>
           <td>${sanitize(fmtDate(r.date))}</td>
           <td>${sanitize(r.billNo || '—')}</td>
-          <td>${{ customer:'Customer', expense:'Expense', invoice:'Invoice' }[r.type] || r.type}</td>
-          <td>${sanitize(r.customer || r.paidTo || r.billedTo || '—')}</td>
+          <td>${{ customer:'Customer', invoice:'Invoice' }[r.type] || r.type}</td>
+          <td>${sanitize(r.customer || r.billedTo || '—')}</td>
           <td>${fmt(r.grandTotal || 0)}</td>
+          <td>${statusBadge}</td>
           <td>
             <button class="btn-edit bill-view-btn" data-id="${sanitize(r.id)}">View</button>
             <button class="btn-edit bill-pdf-btn" data-id="${sanitize(r.id)}">PDF</button>
             <button class="btn-edit bill-print-btn" data-id="${sanitize(r.id)}">Print</button>
-            <button class="btn-delete" data-id="${sanitize(r.id)}" data-type="bill">Delete</button>
+            ${isCancelled ? '' : `<button class="btn-delete bill-cancel-btn" data-id="${sanitize(r.id)}">Cancel</button>`}
           </td>
-        </tr>`).join('');
+        </tr>`;
+      }).join('');
   }
 
   // Bill history filter listeners
@@ -1829,35 +1742,41 @@
   });
 
   // Bill history action buttons (delegated)
-  $('#tableBills').addEventListener('click', (e) => {
+  $('#tableBills').addEventListener('click', async (e) => {
     const btn = e.target;
     const id = btn.dataset?.id;
     if (!id) return;
     const bill = bills.find(b => b.id === id);
     if (!bill) return;
-    const html = billHTMLFromData(bill);
 
     if (btn.classList.contains('bill-view-btn')) {
-      showBillPreview(html);
+      showBillPreview(billHTMLFromData(bill));
     } else if (btn.classList.contains('bill-pdf-btn')) {
       const fname = 'RTCIT_' + (bill.billNo || 'Bill').replace(/[^a-zA-Z0-9-_]/g, '_');
-      downloadBillPdf(html, fname);
+      downloadBillPdf(billHTMLFromData(bill), fname);
       logAuthEvent(auth.currentUser?.email, 'Downloaded Bill PDF: ' + bill.billNo);
     } else if (btn.classList.contains('bill-print-btn')) {
-      printBill(html);
+      printBill(billHTMLFromData(bill));
       logAuthEvent(auth.currentUser?.email, 'Printed Bill: ' + bill.billNo);
+    } else if (btn.classList.contains('bill-cancel-btn')) {
+      if (!confirm('Cancel this bill/invoice? It will be marked as cancelled and excluded from totals.')) return;
+      try {
+        await colBills.doc(id).update({ cancelled: true });
+        logAuthEvent(auth.currentUser?.email, 'Cancelled Bill: ' + bill.billNo);
+        toast('Cancelled: ' + bill.billNo);
+      } catch (err) {
+        console.error(err);
+        toast('Failed to cancel', true);
+      }
     }
   });
-
-  // Delete bill (handled by existing delegated delete handler)
-  // We need to add bill type to the existing delete handler
 
   // Export bills
   $('#btnExportBills').addEventListener('click', () => {
     exportXlsx(
-      lastFilteredBills.map(r => [fmtDate(r.date), r.billNo, { customer:'Customer', expense:'Expense', invoice:'Invoice' }[r.type] || r.type,
-        r.customer || r.paidTo || r.billedTo || '', r.grandTotal || 0, r.notes || '']),
-      ['Date','Bill No.','Type','Customer / Paid To','Amount (₹)','Notes'],
+      lastFilteredBills.map(r => [fmtDate(r.date), r.billNo, { customer:'Customer', invoice:'Invoice' }[r.type] || r.type,
+        r.customer || r.billedTo || '', r.grandTotal || 0, r.cancelled ? 'Cancelled' : 'Active', r.notes || '']),
+      ['Date','Bill No.','Type','Customer / Billed To','Amount (₹)','Status','Notes'],
       'canteen_bills'
     );
     logAuthEvent(auth.currentUser?.email, 'Exported Bills XLSX');
@@ -1866,10 +1785,8 @@
   async function renderBillGenerator() {
     // Set default dates if empty
     if (!$('#cbDate').value) $('#cbDate').value = today();
-    if (!$('#ebDate').value) $('#ebDate').value = today();
     // Auto-assign next bill numbers
     if (!$('#cbBillNo').value) $('#cbBillNo').value = await nextBillNo('CB');
-    if (!$('#ebBillNo').value) $('#ebBillNo').value = await nextBillNo('GE');
     if (!$('#invDate').value) $('#invDate').value = today();
     if (!$('#invBillNo').value) $('#invBillNo').value = await nextBillNo('INV');
     renderBillHistory();
@@ -2897,7 +2814,6 @@
       }
       // Clear cached bill numbers so they get re-fetched
       $('#cbBillNo').value = '';
-      $('#ebBillNo').value = '';
       $('#invBillNo').value = '';
 
       logAuthEvent(auth.currentUser?.email, 'Erased data: ' + range.label + ' (' + totalDeleted + ' records)');
@@ -3070,6 +2986,15 @@
 
   /* ── Version History (auto-rendered from data) ──────────────── */
   const VERSION_HISTORY = [
+    { ver:'v3.8', date:'Apr 8, 2026', title:'Bill Generator Overhaul', items:[
+      'Removed General Expense Bill type — only Customer Bill and Invoice remain',
+      'Summary dashboard above Bill History: total bills, active, cancelled, customer/invoice counts, active total amount',
+      'Summaries recalculate based on selected date range and filters',
+      'Delete button replaced with <strong>Cancel</strong> — marks bill as cancelled instead of deleting',
+      'Cancelled bills shown with line-through styling and excluded from totals',
+      'Status column added to Bill History table (Active / Cancelled)',
+      'XLSX export includes Status column'
+    ]},
     { ver:'v3.7', date:'Apr 8, 2026', title:'Erase Resets Bill Counters', items:[
       'Erasing all data now also deletes bill counter documents, resetting auto-numbering for all three bill types',
       'Partial erase (date, week, month, FY) deletes counters whose month falls within the erased range',

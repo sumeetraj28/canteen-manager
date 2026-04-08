@@ -841,7 +841,6 @@
               <label for="billType">Bill Type</label>
               <select id="billType">
                 <option value="customer">Customer Bill</option>
-                <option value="expense">General Expense Bill</option>
                 <option value="invoice">Invoice</option>
               </select>
             </div>
@@ -909,82 +908,6 @@
               <button type="button" class="btn-secondary" id="cbDownloadPdf">⬇ PDF</button>
               <button type="button" class="btn-secondary" id="cbPrint">🖨 Print</button>
               <button type="button" class="btn-secondary" id="cbNew" style="margin-left:auto">+ Create New</button>
-            </div>
-          </form>
-        </div>
-
-        <!-- ── General Expense Bill Form ── -->
-        <div id="billExpenseForm" class="form-card" style="display:none">
-          <h3>General Expense Bill</h3>
-          <form id="formExpenseBill">
-            <div class="form-grid">
-              <div class="form-group">
-                <label for="ebDate">Date</label>
-                <input type="date" id="ebDate" required />
-              </div>
-              <div class="form-group">
-                <label for="ebBillNo">Bill / Voucher No.</label>
-                <input type="text" id="ebBillNo" readonly tabindex="-1" style="background:var(--card-bg);cursor:default" />
-              </div>
-              <div class="form-group">
-                <label for="ebPaidTo">Paid To</label>
-                <input type="text" id="ebPaidTo" placeholder="Vendor / Person name" required />
-              </div>
-              <div class="form-group">
-                <label for="ebCategory">Category</label>
-                <select id="ebCategory">
-                  <option value="Salary">Salary / Wages</option>
-                  <option value="Rent">Rent</option>
-                  <option value="Electricity">Electricity</option>
-                  <option value="Gas">Gas / Fuel</option>
-                  <option value="Water">Water</option>
-                  <option value="Maintenance">Maintenance</option>
-                  <option value="Equipment">Equipment</option>
-                  <option value="Transport">Transport</option>
-                  <option value="Supplies">Supplies</option>
-                  <option value="Miscellaneous">Miscellaneous</option>
-                </select>
-              </div>
-            </div>
-
-            <h4 style="margin:18px 0 8px">Expense Items</h4>
-            <div id="ebItems">
-              <div class="bill-item-row">
-                <input type="text" placeholder="Description" class="eb-item-desc" required />
-                <input type="number" placeholder="Amount (₹)" class="eb-item-amt" min="0" step="0.01" required />
-                <button type="button" class="btn-sm btn-danger eb-remove-row" title="Remove">&times;</button>
-              </div>
-            </div>
-            <button type="button" class="btn-secondary btn-sm" id="ebAddRow" style="margin-top:8px">+ Add Item</button>
-
-            <div class="form-grid" style="margin-top:16px">
-              <div class="form-group">
-                <label>Total Amount</label>
-                <input type="text" id="ebTotal" readonly tabindex="-1" value="₹0" style="font-weight:700;font-size:1.1em" />
-              </div>
-              <div class="form-group">
-                <label for="ebPaymentMode">Payment Mode</label>
-                <select id="ebPaymentMode">
-                  <option value="Cash">Cash</option>
-                  <option value="UPI">UPI</option>
-                  <option value="Bank Transfer">Bank Transfer</option>
-                  <option value="Cheque">Cheque</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-group full-span" style="margin-top:8px">
-              <label for="ebNotes">Notes / Remarks</label>
-              <input type="text" id="ebNotes" placeholder="Any additional remarks" />
-            </div>
-
-            <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
-              <button type="button" class="btn-primary" id="ebSave">💾 Save</button>
-              <button type="button" class="btn-secondary" id="ebPreview">👁 Preview</button>
-              <button type="button" class="btn-secondary" id="ebDownloadPdf">⬇ PDF</button>
-              <button type="button" class="btn-secondary" id="ebPrint">🖨 Print</button>
-              <button type="button" class="btn-secondary" id="ebNew" style="margin-left:auto">+ Create New</button>
             </div>
           </form>
         </div>
@@ -1090,6 +1013,18 @@
           <div id="billPreviewArea"></div>
         </div>
 
+        <!-- ── Bill Summary ── -->
+        <div class="dash-section" id="billSummarySection">
+          <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">
+            <div class="kpi-card"><div class="kpi-label">Total Bills</div><div class="kpi-value" id="sumTotalBills">0</div></div>
+            <div class="kpi-card"><div class="kpi-label">Active</div><div class="kpi-value" id="sumActiveBills">0</div></div>
+            <div class="kpi-card"><div class="kpi-label">Cancelled</div><div class="kpi-value" id="sumCancelledBills">0</div></div>
+            <div class="kpi-card"><div class="kpi-label">Customer Bills</div><div class="kpi-value" id="sumCustomerBills">0</div></div>
+            <div class="kpi-card"><div class="kpi-label">Invoices</div><div class="kpi-value" id="sumInvoiceBills">0</div></div>
+            <div class="kpi-card"><div class="kpi-label">Active Total (₹)</div><div class="kpi-value" id="sumBillAmount">₹0</div></div>
+          </div>
+        </div>
+
         <!-- ── Bill History ── -->
         <div class="table-card">
           <div class="table-header">
@@ -1105,10 +1040,9 @@
             <select id="filterBillType" class="filter-input">
               <option value="">All Types</option>
               <option value="customer">Customer Bill</option>
-              <option value="expense">Expense Bill</option>
               <option value="invoice">Invoice</option>
             </select>
-            <input type="text" id="filterBillSearch" class="filter-input" placeholder="Search bill no / customer / paid to..." />
+            <input type="text" id="filterBillSearch" class="filter-input" placeholder="Search bill no / customer..." />
           </div>
           <div class="table-wrapper">
             <table id="tableBills">
@@ -1116,8 +1050,9 @@
                 <th class="sortable" data-col="date">Date <span class="sort-icon"></span></th>
                 <th class="sortable" data-col="billNo">Bill No. <span class="sort-icon"></span></th>
                 <th class="sortable" data-col="type">Type <span class="sort-icon"></span></th>
-                <th class="sortable" data-col="party">Customer / Paid To <span class="sort-icon"></span></th>
+                <th class="sortable" data-col="party">Customer / Billed To <span class="sort-icon"></span></th>
                 <th class="sortable" data-col="amount">Amount (₹) <span class="sort-icon"></span></th>
+                <th class="sortable" data-col="status">Status <span class="sort-icon"></span></th>
                 <th>Action</th>
               </tr></thead>
               <tbody></tbody>
