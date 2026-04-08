@@ -443,3 +443,7 @@ h4.collapsible-toggle.collapsed::after{
 .table-header.collapsible-toggle h3{pointer-events:none}
 .section-heading.collapsible-toggle:hover,
 .table-header.collapsible-toggle:hover{opacity:.8}
+
+/* ── Erase modal ──────────────────────────────────── */
+#btnEraseConfirm:hover{background:#b91c1c!important}
+#btnEraseConfirm:disabled{opacity:.5;cursor:not-allowed}

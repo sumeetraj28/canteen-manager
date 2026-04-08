@@ -2061,32 +2061,127 @@
     }
   });
 
-  // ── Clear Data ────────────────────────────────────
-  $('#clearDataBtn').addEventListener('click', async () => {
-    if (!confirm('Are you sure? This will delete ALL canteen data permanently from the cloud.')) return;
-    const password = prompt('Re-enter your password to confirm:');
-    if (!password) return;
-    const user = auth.currentUser;
-    if (!user) return toast('Not logged in', true);
-    try {
-      const credential = firebase.auth.EmailAuthProvider.credential(user.email, password);
-      await user.reauthenticateWithCredential(credential);
-    } catch {
-      return toast('Incorrect password. Reset cancelled.', true);
+  // ── Erase Data ─────────────────────────────────────
+  const ERASE_PASSWORD = 'Erase@RTCIT2026';
+  const eraseModal = $('#eraseModal');
+  const eraseMode = $('#eraseMode');
+
+  $('#clearDataBtn').addEventListener('click', () => {
+    eraseMode.value = '';
+    $$('.erase-option').forEach(el => el.style.display = 'none');
+    $('#erasePassword').value = '';
+    $('#eraseStatus').textContent = '';
+    $('#btnEraseConfirm').disabled = false;
+    $('#btnEraseConfirm').textContent = '🗑️ Erase Data';
+    // Populate FY dropdown
+    const fySet = new Set();
+    [...itemsIn, ...itemsOut, ...expenses, ...sales].forEach(r => {
+      if (!r.date) return;
+      const d = new Date(r.date);
+      const fy = d.getMonth() < 3 ? d.getFullYear() - 1 : d.getFullYear();
+      fySet.add(fy);
+    });
+    const fyArr = [...fySet].sort((a, b) => b - a);
+    $('#eraseFY').innerHTML = '<option value="">— Select —</option>' + fyArr.map(y => `<option value="${y}">${y}–${y + 1}</option>`).join('');
+    eraseModal.classList.add('active');
+  });
+
+  $('#eraseModalClose').addEventListener('click', () => eraseModal.classList.remove('active'));
+  $('#btnEraseCancel').addEventListener('click', () => eraseModal.classList.remove('active'));
+  eraseModal.addEventListener('click', (e) => { if (e.target === eraseModal) eraseModal.classList.remove('active'); });
+
+  eraseMode.addEventListener('change', () => {
+    $$('.erase-option').forEach(el => el.style.display = 'none');
+    const v = eraseMode.value;
+    if (v === 'day') $('#eraseDayOpt').style.display = '';
+    else if (v === 'week') $('#eraseWeekOpt').style.display = '';
+    else if (v === 'month') $('#eraseMonthOpt').style.display = '';
+    else if (v === 'fy') $('#eraseFYOpt').style.display = '';
+    else if (v === 'all') $('#eraseAllOpt').style.display = '';
+  });
+
+  function getEraseDateRange() {
+    const mode = eraseMode.value;
+    if (mode === 'day') {
+      const d = $('#eraseDay').value;
+      if (!d) return null;
+      return { from: d, to: d, label: 'date ' + fmtDate(d) };
     }
+    if (mode === 'week') {
+      const f = $('#eraseWeekFrom').value, t = $('#eraseWeekTo').value;
+      if (!f || !t || f > t) return null;
+      return { from: f, to: t, label: fmtDate(f) + ' to ' + fmtDate(t) };
+    }
+    if (mode === 'month') {
+      const m = $('#eraseMonth').value; // yyyy-mm
+      if (!m) return null;
+      const [y, mm] = m.split('-');
+      const lastDay = new Date(+y, +mm, 0).getDate();
+      return { from: m + '-01', to: m + '-' + String(lastDay).padStart(2, '0'), label: new Date(+y, +mm - 1).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }) };
+    }
+    if (mode === 'fy') {
+      const fy = $('#eraseFY').value;
+      if (!fy) return null;
+      return { from: fy + '-04-01', to: (+fy + 1) + '-03-31', label: 'FY ' + fy + '–' + (+fy + 1) };
+    }
+    if (mode === 'all') {
+      return { from: null, to: null, label: 'ALL data' };
+    }
+    return null;
+  }
+
+  $('#btnEraseConfirm').addEventListener('click', async () => {
+    const range = getEraseDateRange();
+    if (!range) return toast('Please select a valid erase range', true);
+    const pw = $('#erasePassword').value;
+    if (pw !== ERASE_PASSWORD) {
+      $('#eraseStatus').textContent = '❌ Incorrect erase password.';
+      $('#eraseStatus').style.color = 'var(--red)';
+      return;
+    }
+    if (!confirm('Are you sure you want to erase ' + range.label + '? This cannot be undone.')) return;
+
+    const btn = $('#btnEraseConfirm');
+    btn.disabled = true;
+    btn.textContent = '⏳ Erasing…';
+    $('#eraseStatus').textContent = 'Deleting records…';
+    $('#eraseStatus').style.color = 'var(--text-light)';
+
     try {
-      const batch = db.batch();
-      const [snap1, snap2, snap3, snap4] = await Promise.all([
-        colItemsIn.get(), colItemsOut.get(), colExpenses.get(), colSales.get()
-      ]);
-      snap1.docs.forEach(d => batch.delete(d.ref));
-      snap2.docs.forEach(d => batch.delete(d.ref));
-      snap3.docs.forEach(d => batch.delete(d.ref));
-      snap4.docs.forEach(d => batch.delete(d.ref));
-      await batch.commit();
-      toast('All data cleared');
-    } catch {
-      toast('Failed to clear data', true);
+      const collections = [colItemsIn, colItemsOut, colExpenses, colSales];
+      let totalDeleted = 0;
+
+      for (const col of collections) {
+        let query;
+        if (range.from && range.to) {
+          query = col.where('date', '>=', range.from).where('date', '<=', range.to);
+        } else {
+          query = col; // all
+        }
+        const snap = await query.get();
+        // Firestore batch limit is 500
+        const docs = snap.docs;
+        for (let i = 0; i < docs.length; i += 400) {
+          const batch = db.batch();
+          docs.slice(i, i + 400).forEach(d => batch.delete(d.ref));
+          await batch.commit();
+        }
+        totalDeleted += docs.length;
+      }
+
+      logAuthEvent(auth.currentUser?.email, 'Erased data: ' + range.label + ' (' + totalDeleted + ' records)');
+      $('#eraseStatus').textContent = '✅ Erased ' + totalDeleted + ' records (' + range.label + ')';
+      $('#eraseStatus').style.color = 'var(--green)';
+      toast('Erased ' + totalDeleted + ' records');
+      btn.textContent = '✅ Done';
+      setTimeout(() => eraseModal.classList.remove('active'), 1500);
+    } catch (err) {
+      console.error(err);
+      $('#eraseStatus').textContent = '❌ Failed: ' + err.message;
+      $('#eraseStatus').style.color = 'var(--red)';
+      btn.disabled = false;
+      btn.textContent = '🗑️ Erase Data';
+      toast('Erase failed', true);
     }
   });
 

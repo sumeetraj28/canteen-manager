@@ -83,7 +83,7 @@
     <div class="sidebar-footer">
       <div class="sidebar-user" id="sidebarUser"></div>
       <button id="logoutBtn" class="btn-clear">Logout</button>
-      <button id="clearDataBtn" class="btn-clear" style="margin-top:8px">Reset All Data</button>
+      <button id="clearDataBtn" class="btn-clear" style="margin-top:8px">Erase Data</button>
     </div>
   </aside>
 
@@ -1163,6 +1163,60 @@
 
   <!-- Import Modal -->
   <div class="modal-overlay" id="importModal">
+
+  <!-- Erase Data Modal -->
+  <div class="modal-overlay" id="eraseModal">
+    <div class="modal-card" style="max-width:460px">
+      <div class="modal-header" style="background:#fef2f2;border-bottom-color:#fecaca">
+        <h3 style="color:var(--red)">🗑️ Erase Data</h3>
+        <button class="modal-close" id="eraseModalClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="margin-bottom:16px">
+          <label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:6px">Erase Mode</label>
+          <select id="eraseMode" class="filter-input" style="width:100%">
+            <option value="">— Select —</option>
+            <option value="day">Day-wise (select a date)</option>
+            <option value="week">Week-wise (select a range)</option>
+            <option value="month">Month-wise (select a month)</option>
+            <option value="fy">Financial Year-wise</option>
+            <option value="all">Erase Everything</option>
+          </select>
+        </div>
+        <div id="eraseDayOpt" class="erase-option" style="display:none">
+          <label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:6px">Select Date</label>
+          <input type="date" id="eraseDay" class="filter-input" style="width:100%" />
+        </div>
+        <div id="eraseWeekOpt" class="erase-option" style="display:none">
+          <label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:6px">Select Week Range</label>
+          <div style="display:flex;gap:8px">
+            <input type="date" id="eraseWeekFrom" class="filter-input" style="flex:1" />
+            <input type="date" id="eraseWeekTo" class="filter-input" style="flex:1" />
+          </div>
+        </div>
+        <div id="eraseMonthOpt" class="erase-option" style="display:none">
+          <label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:6px">Select Month</label>
+          <input type="month" id="eraseMonth" class="filter-input" style="width:100%" />
+        </div>
+        <div id="eraseFYOpt" class="erase-option" style="display:none">
+          <label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:6px">Select Financial Year</label>
+          <select id="eraseFY" class="filter-input" style="width:100%"></select>
+        </div>
+        <div id="eraseAllOpt" class="erase-option" style="display:none">
+          <p style="color:var(--red);font-weight:600;font-size:.9rem;padding:12px;background:#fef2f2;border-radius:var(--radius-sm)">⚠️ This will permanently delete ALL records from all collections.</p>
+        </div>
+        <div style="margin-top:16px">
+          <label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:6px">Erase Password</label>
+          <input type="password" id="erasePassword" class="filter-input" style="width:100%" placeholder="Enter erase password" />
+        </div>
+        <p id="eraseStatus" style="font-size:.82rem;margin-top:10px;color:var(--text-light);min-height:1.2em"></p>
+        <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+          <button class="btn-secondary btn-sm" id="btnEraseCancel">Cancel</button>
+          <button class="btn-primary btn-sm" id="btnEraseConfirm" style="background:var(--red);border-color:var(--red)">🗑️ Erase Data</button>
+        </div>
+      </div>
+    </div>
+  </div>
     <div class="modal-card">
       <div class="modal-header">
         <h3 id="importModalTitle">Import Data</h3>
