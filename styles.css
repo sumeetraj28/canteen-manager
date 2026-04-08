@@ -456,8 +456,8 @@ h4.collapsible-toggle.collapsed::after{
 .date-wrap input[type="date"]{color:transparent;width:100%}
 .date-wrap input[type="date"]::-webkit-datetime-edit{color:transparent}
 .date-wrap input[type="date"]::-webkit-calendar-picker-indicator{opacity:1;cursor:pointer}
-.date-display{position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none;font-size:inherit;color:var(--text);white-space:nowrap}
-.date-display:empty::after{content:attr(data-placeholder);color:var(--text-light);opacity:.6}
+.date-wrap .date-display{position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none;font-size:inherit;color:var(--text);white-space:nowrap}
+.date-wrap .date-display:empty::after{content:attr(data-placeholder);color:var(--text-light);opacity:.6}
 
 /* ── Accessibility ────────────────────────────────── */
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
