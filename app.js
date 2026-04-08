@@ -2861,6 +2861,45 @@
         totalDeleted += docs.length;
       }
 
+      // Reset bill counters
+      if (range.from === null && range.to === null) {
+        // Erase all — delete every counter document
+        const cSnap = await colBillCounters.get();
+        const cDocs = cSnap.docs;
+        for (let i = 0; i < cDocs.length; i += 400) {
+          const batch = db.batch();
+          cDocs.slice(i, i + 400).forEach(d => batch.delete(d.ref));
+          await batch.commit();
+        }
+      } else {
+        // Partial erase — delete counters whose FY+month fall within the range
+        const cSnap = await colBillCounters.get();
+        const cToDelete = cSnap.docs.filter(d => {
+          const data = d.data();
+          // Counter doc stores fy (e.g. "2025-26") and month (e.g. "04")
+          const fy = data.fy; // "2025-26"
+          const mm = data.month; // "04"
+          if (!fy || !mm) return false;
+          const fyStart = parseInt(fy.split('-')[0]);
+          const monthNum = parseInt(mm);
+          // Determine the calendar year+month this counter belongs to
+          const calYear = monthNum >= 4 ? fyStart : fyStart + 1;
+          const firstDay = calYear + '-' + mm + '-01';
+          const lastDay = calYear + '-' + mm + '-' + String(new Date(calYear, monthNum, 0).getDate()).padStart(2, '0');
+          // If any day in this counter's month overlaps with the erase range
+          return lastDay >= range.from && firstDay <= range.to;
+        });
+        for (let i = 0; i < cToDelete.length; i += 400) {
+          const batch = db.batch();
+          cToDelete.slice(i, i + 400).forEach(d => batch.delete(d.ref));
+          await batch.commit();
+        }
+      }
+      // Clear cached bill numbers so they get re-fetched
+      $('#cbBillNo').value = '';
+      $('#ebBillNo').value = '';
+      $('#invBillNo').value = '';
+
       logAuthEvent(auth.currentUser?.email, 'Erased data: ' + range.label + ' (' + totalDeleted + ' records)');
       $('#eraseStatus').textContent = '✅ Erased ' + totalDeleted + ' records (' + range.label + ')';
       $('#eraseStatus').style.color = 'var(--green)';
@@ -3031,6 +3070,11 @@
 
   /* ── Version History (auto-rendered from data) ──────────────── */
   const VERSION_HISTORY = [
+    { ver:'v3.7', date:'Apr 8, 2026', title:'Erase Resets Bill Counters', items:[
+      'Erasing all data now also deletes bill counter documents, resetting auto-numbering for all three bill types',
+      'Partial erase (date, week, month, FY) deletes counters whose month falls within the erased range',
+      'Cached bill number fields are cleared so next visit fetches fresh numbers'
+    ]},
     { ver:'v3.6', date:'Apr 8, 2026', title:'Save &amp; Create New Buttons', items:[
       'Explicit <strong>Save</strong> button — persists bill to Firestore, shows preview, then resets form',
       '<strong>Create New</strong> button — clears the form and generates a fresh bill number',
