@@ -1224,6 +1224,136 @@
           <h3>📦 Changelog &mdash; Version History</h3>
           <div class="changelog-list">
             <div class="changelog-entry">
+              <div class="changelog-version">v3.3</div>
+              <div class="changelog-date">Apr 8, 2026</div>
+              <div class="changelog-body">
+                <strong>Bill History &amp; Persistence</strong>
+                <ul>
+                  <li>All generated bills saved to Firestore (<code>bills</code> collection)</li>
+                  <li>Bill History table with sortable columns, date/type/search filters</li>
+                  <li>View, re-download PDF, and re-print any past bill</li>
+                  <li>Delete bills from history; export bill history to XLSX</li>
+                  <li>Form auto-resets after bill generation with next bill number</li>
+                  <li>Bills included in Erase Data &amp; cleared on logout</li>
+                </ul>
+              </div>
+            </div>
+            <div class="changelog-entry">
+              <div class="changelog-version">v3.2</div>
+              <div class="changelog-date">Apr 8, 2026</div>
+              <div class="changelog-body">
+                <strong>Bill Format Updates</strong>
+                <ul>
+                  <li>Address changed to &ldquo;Anandi, Ormanjhi, Ranchi&rdquo;</li>
+                  <li>Thank-you text: &ldquo;Thank you. Visit again.&rdquo;</li>
+                  <li>Replaced signatures with &ldquo;computer-generated bill&rdquo; note</li>
+                </ul>
+              </div>
+            </div>
+            <div class="changelog-entry">
+              <div class="changelog-version">v3.1</div>
+              <div class="changelog-date">Apr 8, 2026</div>
+              <div class="changelog-body">
+                <strong>Auto-Generated Bill Numbers</strong>
+                <ul>
+                  <li>Format: <code>FC/CB/{FY}/{MM}/NNN</code> (Customer) &amp; <code>FC/GE/{FY}/{MM}/NNN</code> (Expense)</li>
+                  <li>Firestore transaction-based counters &mdash; no duplicates</li>
+                  <li>Auto-assigned on page load; resets per month &amp; FY</li>
+                  <li>Bill No. fields now read-only</li>
+                </ul>
+              </div>
+            </div>
+            <div class="changelog-entry">
+              <div class="changelog-version">v3.0</div>
+              <div class="changelog-date">Apr 8, 2026</div>
+              <div class="changelog-body">
+                <strong>Bill Generator Tab</strong>
+                <ul>
+                  <li>New <strong>Bill Generator</strong> tab between Sales &amp; Reports</li>
+                  <li><strong>Customer Bill</strong>: dynamic line items, qty &times; rate, discount, subtotal/grand total</li>
+                  <li><strong>General Expense Bill</strong>: dynamic items, category, payment mode</li>
+                  <li>Preview in-page, Download as PDF, Print to new window</li>
+                  <li>RTCIT Food Court branded headers</li>
+                </ul>
+              </div>
+            </div>
+            <div class="changelog-entry">
+              <div class="changelog-version">v2.9</div>
+              <div class="changelog-date">Apr 8, 2026</div>
+              <div class="changelog-body">
+                <strong>Full Website Audit &amp; Security Fixes</strong>
+                <ul>
+                  <li>XSS protection: all <code>fmtDate</code>, <code>r.qty</code>, <code>r.unit</code> sanitized in innerHTML</li>
+                  <li>Listener cleanup: unsubscribe array, debounced refresh, no duplicates</li>
+                  <li><code>getFYears()</code> includes sales; timezone-safe string split</li>
+                  <li>Added <code>defer</code> to CDN scripts, meta description, theme-color, favicon</li>
+                  <li>Toast: <code>role="alert"</code> for screen readers</li>
+                  <li>CSS: <code>outline:2px solid transparent</code> for High Contrast Mode</li>
+                  <li>Added <code>prefers-reduced-motion</code> &amp; <code>@media print</code> rules</li>
+                </ul>
+              </div>
+            </div>
+            <div class="changelog-entry">
+              <div class="changelog-version">v2.8</div>
+              <div class="changelog-date">Apr 8, 2026</div>
+              <div class="changelog-body">
+                <strong>Date Display DD/MM/YYYY Overlay</strong>
+                <ul>
+                  <li>All date inputs show DD/MM/YYYY via CSS overlay + JS descriptor</li>
+                  <li>Native date picker still works; display updates on programmatic changes</li>
+                  <li>Dashboard &amp; top-bar date overlap fix</li>
+                </ul>
+              </div>
+            </div>
+            <div class="changelog-entry">
+              <div class="changelog-version">v2.7</div>
+              <div class="changelog-date">Apr 8, 2026</div>
+              <div class="changelog-body">
+                <strong>Erase Data Modal &amp; Activity Categories</strong>
+                <ul>
+                  <li>Granular erase: by Day, Week, Month, FY, or Everything</li>
+                  <li>Separate erase password; batch deletion (400-doc batches)</li>
+                  <li>Import &amp; Erase categories in Activity Log with badges</li>
+                </ul>
+              </div>
+            </div>
+            <div class="changelog-entry">
+              <div class="changelog-version">v2.6</div>
+              <div class="changelog-date">Apr 8, 2026</div>
+              <div class="changelog-body">
+                <strong>Items In Form Reorder &amp; Default Dates</strong>
+                <ul>
+                  <li>Items In form: Bill No &amp; Remark moved to end</li>
+                  <li>Form date inputs default to today on load &amp; after submit</li>
+                  <li>Collapsible sections with chevron &amp; localStorage persistence</li>
+                </ul>
+              </div>
+            </div>
+            <div class="changelog-entry">
+              <div class="changelog-version">v2.5</div>
+              <div class="changelog-date">Apr 8, 2026</div>
+              <div class="changelog-body">
+                <strong>DD/MM/YYYY Date Format &amp; Responsive Sidebar</strong>
+                <ul>
+                  <li>All dates displayed as DD/MM/YYYY across tables, XLSX, dashboard</li>
+                  <li>Collapsible sidebar with mobile overlay &amp; hamburger toggle</li>
+                  <li>XLSX Import feature for all 4 data types</li>
+                </ul>
+              </div>
+            </div>
+            <div class="changelog-entry">
+              <div class="changelog-version">v2.4</div>
+              <div class="changelog-date">Apr 8, 2026</div>
+              <div class="changelog-body">
+                <strong>Month-wise Summary Tables &amp; Sortable Columns</strong>
+                <ul>
+                  <li>Month-wise summary for Items In, Items Out, Expenses, Sales</li>
+                  <li>All tables sortable by clicking column headers</li>
+                  <li>FY selector on summary tables</li>
+                </ul>
+              </div>
+            </div>
+            <div class="changelog-entry">
               <div class="changelog-version">v2.3</div>
               <div class="changelog-date">Apr 8, 2026</div>
               <div class="changelog-body">
