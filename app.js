@@ -443,6 +443,7 @@
     XLSX.utils.book_append_sheet(wb, ws, 'Purchase Summaries');
     XLSX.writeFile(wb, 'canteen_purchase_summaries_FY' + fyLabel(fy) + '_' + today() + '.xlsx');
     toast('Exported to .xlsx');
+    logAuthEvent(auth.currentUser?.email, 'Exported Purchase Summaries XLSX');
   });
 
   // ── Items Out ─────────────────────────────────────
@@ -716,6 +717,7 @@
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Sales Summaries');
     XLSX.writeFile(wb, 'canteen_sales_summaries_FY' + fyLabel(fy) + '_' + today() + '.xlsx');
+    logAuthEvent(auth.currentUser?.email, 'Exported Sales Summaries XLSX');
   });
 
   // ── Expenses ──────────────────────────────────────
@@ -974,6 +976,7 @@
       ['Item','Brand','Supplier','Qty In','Qty Out','Balance','Unit','Rate/Unit','Stock Value','Status'],
       'canteen_inventory'
     );
+    logAuthEvent(auth.currentUser?.email, 'Exported Inventory XLSX');
   });
 
   $('#btnExportItemsIn').addEventListener('click', () => {
@@ -982,6 +985,7 @@
       ['Date','Bill No','Item','Brand','Supplier','Qty','Unit','Rate','Cost','Remark'],
       'canteen_items_in'
     );
+    logAuthEvent(auth.currentUser?.email, 'Exported Items In XLSX');
   });
 
   $('#btnExportItemsOut').addEventListener('click', () => {
@@ -990,6 +994,7 @@
       ['Date','Item','Brand','Supplier','Qty','Unit','Rate','Amount','Category','Person','Remark'],
       'canteen_items_out'
     );
+    logAuthEvent(auth.currentUser?.email, 'Exported Items Out XLSX');
   });
 
   $('#btnExportExpenses').addEventListener('click', () => {
@@ -998,6 +1003,7 @@
       ['Date','Category','Amount','Description'],
       'canteen_expenses'
     );
+    logAuthEvent(auth.currentUser?.email, 'Exported Expenses XLSX');
   });
 
   // ── Sales ─────────────────────────────────────────
@@ -1077,6 +1083,7 @@
       ['Date','Sale Type','Amount','Details'],
       'canteen_sales'
     );
+    logAuthEvent(auth.currentUser?.email, 'Exported Sales XLSX');
   });
 
   // ── Sales: Sale Type Month-wise Summary ───────────
@@ -1153,6 +1160,7 @@
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Sale Type Summary');
     XLSX.writeFile(wb, 'canteen_sale_type_summary_FY' + fyLabel(fy) + '_' + today() + '.xlsx');
+    logAuthEvent(auth.currentUser?.email, 'Exported Sale Type Summary XLSX');
   });
 
   // ── P&L Computation (Financial Year: Apr–Mar) ────
@@ -1985,6 +1993,7 @@
     addSheet('rptDailyTable', 'Daily Breakdown');
     XLSX.writeFile(wb, 'canteen_report_' + from + '_to_' + to + '.xlsx');
     toast('Report exported to .xlsx');
+    logAuthEvent(auth.currentUser?.email, 'Exported Report XLSX');
   });
 
   // Export Report as PDF
@@ -2023,6 +2032,7 @@
       const { from, to } = getReportDateRange();
       pdf.save('canteen_report_' + from + '_to_' + to + '.pdf');
       toast('PDF downloaded');
+      logAuthEvent(auth.currentUser?.email, 'Downloaded Report PDF');
     } catch (err) {
       console.error(err);
       toast('PDF generation failed', true);
@@ -2151,27 +2161,84 @@
     if (activePage === 'changelog') renderAuthLog();
   });
 
+  function classifyAction(action) {
+    if (action === 'Login' || action === 'Logout') return 'login';
+    if (action.startsWith('Edited')) return 'edit';
+    if (action.startsWith('Deleted')) return 'delete';
+    if (action.startsWith('Exported')) return 'export';
+    if (action.startsWith('Downloaded')) return 'download';
+    return 'other';
+  }
+
+  const categoryLabels = { login: '🔑 Login/Logout', edit: '✏️ Edit', delete: '🗑️ Delete', export: '📤 Export', download: '📄 Download', other: '❓ Other' };
+  const categoryBadgeClass = { login: 'status-ok', edit: 'badge-edit', delete: 'status-out', export: 'badge-export', download: 'badge-download', other: 'status-low' };
+
   function renderAuthLog() {
+    // Classify and count
+    const counts = { total: authLogs.length, login: 0, edit: 0, delete: 0, export: 0, download: 0 };
+    authLogs.forEach(r => { const c = classifyAction(r.action); if (counts[c] !== undefined) counts[c]++; });
+    const s = id => document.getElementById(id);
+    s('statTotalActions').textContent = counts.total;
+    s('statLogins').textContent = counts.login;
+    s('statEdits').textContent = counts.edit;
+    s('statDeletes').textContent = counts.delete;
+    s('statExports').textContent = counts.export;
+    s('statDownloads').textContent = counts.download;
+
+    // Apply filters
+    const catFilter = $('#filterLogCategory').value;
+    const userFilter = $('#filterLogUser').value.toLowerCase().trim();
+    const fromFilter = $('#filterLogFrom').value;
+    const toFilter = $('#filterLogTo').value;
+
+    let filtered = authLogs.filter(r => {
+      if (catFilter && classifyAction(r.action) !== catFilter) return false;
+      if (userFilter && !r.email.toLowerCase().includes(userFilter)) return false;
+      if (fromFilter) {
+        const d = r.ts.toISOString().slice(0, 10);
+        if (d < fromFilter) return false;
+      }
+      if (toFilter) {
+        const d = r.ts.toISOString().slice(0, 10);
+        if (d > toFilter) return false;
+      }
+      return true;
+    });
+
     const tbody = $('#tableAuthLog tbody');
-    let list = applySort(authLogs, 'tableAuthLog', (r, col) => {
+    let list = applySort(filtered, 'tableAuthLog', (r, col) => {
       if (col === 'timestamp') return r.ts.getTime();
       return r[col] || '';
     });
     lastFilteredAuthLog = list;
     tbody.innerHTML = list.length === 0
-      ? '<tr><td colspan="3" style="text-align:center;color:var(--text-light);padding:32px">No activity recorded yet</td></tr>'
+      ? '<tr><td colspan="4" style="text-align:center;color:var(--text-light);padding:32px">No activity recorded yet</td></tr>'
       : list.map(r => {
           const dt = r.ts.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })
                    + ' ' + r.ts.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit', hour12:true });
-          const cls = r.action === 'Login' ? 'status-ok' : 'status-out';
+          const cat = classifyAction(r.action);
+          const cls = categoryBadgeClass[cat] || 'status-low';
           return `<tr>
             <td>${sanitize(dt)}</td>
             <td>${sanitize(r.email)}</td>
-            <td><span class="status-badge ${cls}">${sanitize(r.action)}</span></td>
+            <td>${sanitize(r.action)}</td>
+            <td><span class="status-badge ${cls}">${categoryLabels[cat] || cat}</span></td>
           </tr>`;
         }).join('');
   }
   let lastFilteredAuthLog = [];
+
+  // Filter listeners for activity log
+  ['filterLogCategory','filterLogUser','filterLogFrom','filterLogTo'].forEach(id => {
+    $('#' + id).addEventListener(id === 'filterLogCategory' ? 'change' : 'input', () => renderAuthLog());
+  });
+  $('#clearFiltersLog').addEventListener('click', () => {
+    $('#filterLogCategory').value = '';
+    $('#filterLogUser').value = '';
+    $('#filterLogFrom').value = '';
+    $('#filterLogTo').value = '';
+    renderAuthLog();
+  });
 
   $('#btnExportAuthLog').addEventListener('click', () => {
     exportXlsx(
@@ -2182,6 +2249,7 @@
       ['Date & Time','User','Action'],
       'canteen_auth_log'
     );
+    logAuthEvent(auth.currentUser?.email, 'Exported Activity Log XLSX');
   });
 
   // ── P&L Export ────────────────────────────────────
@@ -2192,6 +2260,7 @@
       ['Month','Revenue','Item Costs','Other Expenses','Total Costs','Net P&L','Margin %','Cumulative'],
       'canteen_pnl_FY' + fyLabel(fy)
     );
+    logAuthEvent(auth.currentUser?.email, 'Exported P&L XLSX');
   });
 
   // ── Month-wise Expense Export ─────────────────────
@@ -2203,6 +2272,7 @@
       ['Category', ...MONTHS, 'Total'],
       'canteen_monthly_expenses_FY' + fyLabel(fy)
     );
+    logAuthEvent(auth.currentUser?.email, 'Exported Monthly Expenses XLSX');
   });
 
   // ── Bind sort headers ─────────────────────────────

@@ -952,21 +952,106 @@
 
       <!-- ==================== CHANGELOG ==================== -->
       <section class="page" id="page-changelog">
+        <!-- Activity Stats -->
+        <div class="stat-cards small" id="activityStats">
+          <div class="stat-card card-blue"><div class="stat-icon">📋</div><div><span class="stat-label">Total Actions</span><span class="stat-value" id="statTotalActions">0</span></div></div>
+          <div class="stat-card card-green"><div class="stat-icon">🔑</div><div><span class="stat-label">Logins</span><span class="stat-value" id="statLogins">0</span></div></div>
+          <div class="stat-card card-orange"><div class="stat-icon">✏️</div><div><span class="stat-label">Edits</span><span class="stat-value" id="statEdits">0</span></div></div>
+          <div class="stat-card card-red"><div class="stat-icon">🗑️</div><div><span class="stat-label">Deletes</span><span class="stat-value" id="statDeletes">0</span></div></div>
+          <div class="stat-card" style="border-left-color:var(--primary);background:#eef2ff"><div class="stat-icon">📤</div><div><span class="stat-label">Exports</span><span class="stat-value" id="statExports">0</span></div></div>
+          <div class="stat-card" style="border-left-color:#8b5cf6;background:#f5f3ff"><div class="stat-icon">📄</div><div><span class="stat-label">Downloads</span><span class="stat-value" id="statDownloads">0</span></div></div>
+        </div>
+
+        <!-- Filters -->
         <div class="table-card">
           <div class="table-header">
-            <h3>User Activity Log</h3>
+            <h3>📜 User Activity Log</h3>
             <button class="btn-secondary btn-sm" id="btnExportAuthLog">Export .xlsx</button>
+          </div>
+          <div class="filter-row">
+            <select class="filter-input" id="filterLogCategory" style="width:170px">
+              <option value="">All Categories</option>
+              <option value="login">🔑 Login / Logout</option>
+              <option value="edit">✏️ Edits</option>
+              <option value="delete">🗑️ Deletes</option>
+              <option value="export">📤 Exports</option>
+              <option value="download">📄 Downloads</option>
+            </select>
+            <input type="text" class="filter-input" id="filterLogUser" placeholder="Filter by user…" style="width:200px">
+            <input type="date" class="filter-input" id="filterLogFrom" title="From date">
+            <input type="date" class="filter-input" id="filterLogTo" title="To date">
+            <button class="btn-secondary btn-sm" id="clearFiltersLog">Clear</button>
           </div>
           <div class="table-wrapper">
             <table id="tableAuthLog">
-              <thead><tr><th class="sortable" data-col="timestamp">Date &amp; Time <span class="sort-icon"></span></th><th class="sortable" data-col="email">User <span class="sort-icon"></span></th><th class="sortable" data-col="action">Action <span class="sort-icon"></span></th></tr></thead>
+              <thead><tr>
+                <th class="sortable" data-col="timestamp">Date &amp; Time <span class="sort-icon"></span></th>
+                <th class="sortable" data-col="email">User <span class="sort-icon"></span></th>
+                <th class="sortable" data-col="action">Action <span class="sort-icon"></span></th>
+                <th>Category</th>
+              </tr></thead>
               <tbody></tbody>
             </table>
           </div>
         </div>
+
+        <!-- Version History -->
         <div class="table-card">
-          <h3>Changelog &mdash; Version History</h3>
+          <h3>📦 Changelog &mdash; Version History</h3>
           <div class="changelog-list">
+            <div class="changelog-entry">
+              <div class="changelog-version">v2.3</div>
+              <div class="changelog-date">Apr 8, 2026</div>
+              <div class="changelog-body">
+                <strong>Advanced Changelog &amp; Activity Tracking</strong>
+                <ul>
+                  <li>All exports &amp; report downloads tracked in Activity Log</li>
+                  <li>Category badges: Login, Edit, Delete, Export, Download</li>
+                  <li>Category filter, user search, date range filters</li>
+                  <li>Activity stats cards (totals by category)</li>
+                </ul>
+              </div>
+            </div>
+            <div class="changelog-entry">
+              <div class="changelog-version">v2.2</div>
+              <div class="changelog-date">Apr 8, 2026</div>
+              <div class="changelog-body">
+                <strong>Edit Records, Audit Logging &amp; UX Fixes</strong>
+                <ul>
+                  <li><strong>Edit</strong> button on all 4 record types (Items In/Out, Expenses, Sales)</li>
+                  <li>Delete &amp; edit actions logged to Activity Log</li>
+                  <li>PDF export spinner while generating</li>
+                  <li>Autocomplete restored on data forms</li>
+                  <li>Inventory build optimized (single pass)</li>
+                </ul>
+              </div>
+            </div>
+            <div class="changelog-entry">
+              <div class="changelog-version">v2.1</div>
+              <div class="changelog-date">Apr 8, 2026</div>
+              <div class="changelog-body">
+                <strong>Security Hardening</strong>
+                <ul>
+                  <li>Password re-entry required for <strong>Reset All Data</strong></li>
+                  <li>Verified Firestore rules block unauthenticated access</li>
+                  <li>Fixed table-scroll CSS class inconsistency</li>
+                </ul>
+              </div>
+            </div>
+            <div class="changelog-entry">
+              <div class="changelog-version">v2.0</div>
+              <div class="changelog-date">Apr 8, 2026</div>
+              <div class="changelog-body">
+                <strong>Dashboard &amp; Reports Redesign</strong>
+                <ul>
+                  <li>Professional 8-section Dashboard with KPI cards</li>
+                  <li>Reports page with period selector &amp; multi-sheet XLSX</li>
+                  <li>PDF export of reports via jsPDF + html2canvas</li>
+                  <li>P&amp;L merged into Dashboard</li>
+                  <li>Searchable supplier &amp; brand dropdowns</li>
+                </ul>
+              </div>
+            </div>
             <div class="changelog-entry">
               <div class="changelog-version">v1.6</div>
               <div class="changelog-date">Apr 7, 2026</div>
