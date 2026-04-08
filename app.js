@@ -1676,7 +1676,8 @@
   }
 
   // ── Generate bill (save + action) ─────────────────
-  async function generateBill(type, action) {
+  // ── Helper: collect + validate bill data ───────────
+  async function prepareBillData(type) {
     const prefixMap = { customer: 'CB', expense: 'GE', invoice: 'INV' };
     const fieldMap  = { customer: '#cbBillNo', expense: '#ebBillNo', invoice: '#invBillNo' };
     const prefix = prefixMap[type];
@@ -1685,23 +1686,20 @@
 
     const collectMap = { customer: collectCustomerBillData, expense: collectExpenseBillData, invoice: collectInvoiceData };
     const data = collectMap[type]();
-    if (!data) return toast('Please fill in at least one item with valid data', true);
+    if (!data) { toast('Please fill in at least one item with valid data', true); return null; }
+    return data;
+  }
+
+  // ── Save bill (persist + preview + reset) ─────────
+  async function saveBill(type) {
+    const data = await prepareBillData(type);
+    if (!data) return;
 
     const html = billHTMLFromData(data);
-
-    // Save to Firestore
     await saveBillToFirestore(data);
-    logAuthEvent(auth.currentUser?.email, 'Generated ' + (type === 'invoice' ? 'Invoice' : 'Bill') + ': ' + data.billNo);
-
-    // Perform the action
-    if (action === 'preview') {
-      showBillPreview(html);
-    } else if (action === 'pdf') {
-      const fname = 'RTCIT_' + data.billNo.replace(/[^a-zA-Z0-9-_]/g, '_');
-      await downloadBillPdf(html, fname);
-    } else if (action === 'print') {
-      printBill(html);
-    }
+    logAuthEvent(auth.currentUser?.email, 'Saved ' + (type === 'invoice' ? 'Invoice' : 'Bill') + ': ' + data.billNo);
+    toast('Saved: ' + data.billNo);
+    showBillPreview(html);
 
     // Reset form and get next bill number
     if (type === 'customer') {
@@ -1716,20 +1714,62 @@
     }
   }
 
+  // ── Preview / PDF / Print (no save, no reset) ────
+  async function previewBill(type) {
+    const data = await prepareBillData(type);
+    if (!data) return;
+    showBillPreview(billHTMLFromData(data));
+  }
+
+  async function pdfBill(type) {
+    const data = await prepareBillData(type);
+    if (!data) return;
+    const fname = 'RTCIT_' + data.billNo.replace(/[^a-zA-Z0-9-_]/g, '_');
+    await downloadBillPdf(billHTMLFromData(data), fname);
+  }
+
+  async function printBillAction(type) {
+    const data = await prepareBillData(type);
+    if (!data) return;
+    printBill(billHTMLFromData(data));
+  }
+
+  // ── Create New (reset form) ───────────────────────
+  async function createNewBill(type) {
+    if (type === 'customer') {
+      resetCustomerBillForm();
+      $('#cbBillNo').value = await nextBillNo('CB');
+    } else if (type === 'expense') {
+      resetExpenseBillForm();
+      $('#ebBillNo').value = await nextBillNo('GE');
+    } else {
+      resetInvoiceForm();
+      $('#invBillNo').value = await nextBillNo('INV');
+    }
+    $('#billPreviewCard').style.display = 'none';
+    toast('Form cleared — ready for a new entry');
+  }
+
   // Customer bill buttons
-  $('#cbPreview').addEventListener('click', () => generateBill('customer', 'preview'));
-  $('#cbDownloadPdf').addEventListener('click', () => generateBill('customer', 'pdf'));
-  $('#cbPrint').addEventListener('click', () => generateBill('customer', 'print'));
+  $('#cbSave').addEventListener('click', () => saveBill('customer'));
+  $('#cbPreview').addEventListener('click', () => previewBill('customer'));
+  $('#cbDownloadPdf').addEventListener('click', () => pdfBill('customer'));
+  $('#cbPrint').addEventListener('click', () => printBillAction('customer'));
+  $('#cbNew').addEventListener('click', () => createNewBill('customer'));
 
   // Expense bill buttons
-  $('#ebPreview').addEventListener('click', () => generateBill('expense', 'preview'));
-  $('#ebDownloadPdf').addEventListener('click', () => generateBill('expense', 'pdf'));
-  $('#ebPrint').addEventListener('click', () => generateBill('expense', 'print'));
+  $('#ebSave').addEventListener('click', () => saveBill('expense'));
+  $('#ebPreview').addEventListener('click', () => previewBill('expense'));
+  $('#ebDownloadPdf').addEventListener('click', () => pdfBill('expense'));
+  $('#ebPrint').addEventListener('click', () => printBillAction('expense'));
+  $('#ebNew').addEventListener('click', () => createNewBill('expense'));
 
   // Invoice buttons
-  $('#invPreview').addEventListener('click', () => generateBill('invoice', 'preview'));
-  $('#invDownloadPdf').addEventListener('click', () => generateBill('invoice', 'pdf'));
-  $('#invPrint').addEventListener('click', () => generateBill('invoice', 'print'));
+  $('#invSave').addEventListener('click', () => saveBill('invoice'));
+  $('#invPreview').addEventListener('click', () => previewBill('invoice'));
+  $('#invDownloadPdf').addEventListener('click', () => pdfBill('invoice'));
+  $('#invPrint').addEventListener('click', () => printBillAction('invoice'));
+  $('#invNew').addEventListener('click', () => createNewBill('invoice'));
 
   // ── Bill History ──────────────────────────────────
   function getBillFilters() {
@@ -2991,6 +3031,11 @@
 
   /* ── Version History (auto-rendered from data) ──────────────── */
   const VERSION_HISTORY = [
+    { ver:'v3.6', date:'Apr 8, 2026', title:'Save &amp; Create New Buttons', items:[
+      'Explicit <strong>Save</strong> button — persists bill to Firestore, shows preview, then resets form',
+      '<strong>Create New</strong> button — clears the form and generates a fresh bill number',
+      'Preview, PDF, and Print are now view-only actions (no auto-save or form reset)'
+    ]},
     { ver:'v3.5', date:'Apr 8, 2026', title:'Invoice Generator', items:[
       'New "Invoice" bill type in Bill Generator tab',
       'Invoice form with Billed To, Address, GSTIN/PAN, Due Date fields',
