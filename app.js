@@ -124,6 +124,17 @@
     $('#sidebarOverlay').classList.remove('active');
   });
 
+  // Sidebar collapse/expand toggle (desktop/tablet)
+  $('#sidebarCollapseBtn').addEventListener('click', () => {
+    const sidebar = $('#sidebar');
+    sidebar.classList.toggle('collapsed');
+    localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed') ? '1' : '');
+  });
+  // Restore collapsed state from localStorage
+  if (localStorage.getItem('sidebarCollapsed') === '1') {
+    $('#sidebar').classList.add('collapsed');
+  }
+
   $('#dateDisplay').textContent = new Date().toLocaleDateString('en-IN', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
   $$('input[type="date"]').forEach(inp => inp.value = today());
 
