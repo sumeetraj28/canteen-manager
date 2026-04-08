@@ -1932,6 +1932,16 @@
   // ── Clear Data ────────────────────────────────────
   $('#clearDataBtn').addEventListener('click', async () => {
     if (!confirm('Are you sure? This will delete ALL canteen data permanently from the cloud.')) return;
+    const password = prompt('Re-enter your password to confirm:');
+    if (!password) return;
+    const user = auth.currentUser;
+    if (!user) return toast('Not logged in', true);
+    try {
+      const credential = firebase.auth.EmailAuthProvider.credential(user.email, password);
+      await user.reauthenticateWithCredential(credential);
+    } catch {
+      return toast('Incorrect password. Reset cancelled.', true);
+    }
     try {
       const batch = db.batch();
       const [snap1, snap2, snap3, snap4] = await Promise.all([
