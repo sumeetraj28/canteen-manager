@@ -1230,6 +1230,10 @@
   let bills = [];
   let lastFilteredBills = [];
 
+  // Dirty-form tracking: prevents creating a new bill without saving current one
+  let cbFormDirty = false;
+  let invFormDirty = false;
+
   // Bill number helpers
   function billFY() {
     const now = new Date();
@@ -1582,13 +1586,7 @@
 
   // ── Generate bill (save + action) ─────────────────
   // ── Helper: collect + validate bill data ───────────
-  async function prepareBillData(type) {
-    const prefixMap = { customer: 'CB', invoice: 'INV' };
-    const fieldMap  = { customer: '#cbBillNo', invoice: '#invBillNo' };
-    const prefix = prefixMap[type];
-    const billNoField = fieldMap[type];
-    if (!$(billNoField).value) $(billNoField).value = await nextBillNo(prefix);
-
+  function prepareBillData(type) {
     const collectMap = { customer: collectCustomerBillData, invoice: collectInvoiceData };
     const data = collectMap[type]();
     if (!data) { toast('Please fill in at least one item with valid data', true); return null; }
@@ -1597,8 +1595,15 @@
 
   // ── Save bill (persist + preview + reset) ─────────
   async function saveBill(type) {
-    const data = await prepareBillData(type);
+    const data = prepareBillData(type);
     if (!data) return;
+
+    // Assign bill number only at save time — keeps sequence intact
+    const prefixMap = { customer: 'CB', invoice: 'INV' };
+    const fieldMap  = { customer: '#cbBillNo', invoice: '#invBillNo' };
+    const billNo = await nextBillNo(prefixMap[type]);
+    data.billNo = billNo;
+    $(fieldMap[type]).value = billNo;
 
     const html = billHTMLFromData(data);
     await saveBillToFirestore(data);
@@ -1606,44 +1611,48 @@
     toast('Saved: ' + data.billNo);
     showBillPreview(html);
 
-    // Reset form and get next bill number
+    // Reset form (no pre-assignment of next bill number)
     if (type === 'customer') {
       resetCustomerBillForm();
-      $('#cbBillNo').value = await nextBillNo('CB');
+      cbFormDirty = false;
     } else {
       resetInvoiceForm();
-      $('#invBillNo').value = await nextBillNo('INV');
+      invFormDirty = false;
     }
   }
 
   // ── Preview / PDF / Print (no save, no reset) ────
-  async function previewBill(type) {
-    const data = await prepareBillData(type);
+  function previewBill(type) {
+    const data = prepareBillData(type);
     if (!data) return;
     showBillPreview(billHTMLFromData(data));
   }
 
   async function pdfBill(type) {
-    const data = await prepareBillData(type);
+    const data = prepareBillData(type);
     if (!data) return;
-    const fname = 'RTCIT_' + data.billNo.replace(/[^a-zA-Z0-9-_]/g, '_');
+    const fname = 'RTCIT_' + (data.billNo || 'DRAFT').replace(/[^a-zA-Z0-9-_]/g, '_');
     await downloadBillPdf(billHTMLFromData(data), fname);
   }
 
-  async function printBillAction(type) {
-    const data = await prepareBillData(type);
+  function printBillAction(type) {
+    const data = prepareBillData(type);
     if (!data) return;
     printBill(billHTMLFromData(data));
   }
 
   // ── Create New (reset form) ───────────────────────
-  async function createNewBill(type) {
+  function createNewBill(type) {
+    const isDirty = type === 'customer' ? cbFormDirty : invFormDirty;
+    if (isDirty) {
+      if (!confirm('Current bill has unsaved changes. Save it first or discard?\n\nOK = Discard & start new\nCancel = Go back and save')) return;
+    }
     if (type === 'customer') {
       resetCustomerBillForm();
-      $('#cbBillNo').value = await nextBillNo('CB');
+      cbFormDirty = false;
     } else {
       resetInvoiceForm();
-      $('#invBillNo').value = await nextBillNo('INV');
+      invFormDirty = false;
     }
     $('#billPreviewCard').style.display = 'none';
     toast('Form cleared — ready for a new entry');
@@ -1662,6 +1671,10 @@
   $('#invDownloadPdf').addEventListener('click', () => pdfBill('invoice'));
   $('#invPrint').addEventListener('click', () => printBillAction('invoice'));
   $('#invNew').addEventListener('click', () => createNewBill('invoice'));
+
+  // Dirty-form tracking: mark form dirty when user types in bill form fields
+  $('#billCustomerForm').addEventListener('input', () => { cbFormDirty = true; });
+  $('#billInvoiceForm').addEventListener('input', () => { invFormDirty = true; });
 
   // ── Bill History ──────────────────────────────────
   function getBillFilters() {
@@ -1787,13 +1800,11 @@
     logAuthEvent(auth.currentUser?.email, 'Exported Bills XLSX');
   });
 
-  async function renderBillGenerator() {
+  function renderBillGenerator() {
     // Set default dates if empty
     if (!$('#cbDate').value) $('#cbDate').value = today();
-    // Auto-assign next bill numbers
-    if (!$('#cbBillNo').value) $('#cbBillNo').value = await nextBillNo('CB');
     if (!$('#invDate').value) $('#invDate').value = today();
-    if (!$('#invBillNo').value) $('#invBillNo').value = await nextBillNo('INV');
+    // Bill numbers are assigned only on save — no pre-assignment
     renderBillHistory();
   }
 
@@ -2991,6 +3002,14 @@
 
   /* ── Version History (auto-rendered from data) ──────────────── */
   const VERSION_HISTORY = [
+    { ver:'v3.9', date:'Apr 9, 2026', title:'Sequential Bill Number Protection', items:[
+      'Bill numbers are now assigned <strong>only at save time</strong> — no number is consumed until the bill is actually saved',
+      'Prevents gaps in the bill number sequence caused by page reloads, navigation, or unused previews',
+      'Bill No. field shows "Auto-assigned on save" placeholder until the bill is saved',
+      'Cannot create a new bill if the current form has unsaved changes — warns the user to save first',
+      'Preview, PDF, and Print work as drafts (without a bill number) before saving',
+      'Form dirty-state tracking detects unsaved edits automatically'
+    ]},
     { ver:'v3.8', date:'Apr 8, 2026', title:'Bill Generator Overhaul', items:[
       'Removed General Expense Bill type — only Customer Bill and Invoice remain',
       'Summary dashboard above Bill History: total bills, active, cancelled, customer/invoice counts, active total amount',
