@@ -1645,14 +1645,13 @@
   function createNewBill(type) {
     const isDirty = type === 'customer' ? cbFormDirty : invFormDirty;
     if (isDirty) {
-      if (!confirm('Current bill has unsaved changes. Save it first or discard?\n\nOK = Discard & start new\nCancel = Go back and save')) return;
+      toast('Please save the current bill before creating a new one', true);
+      return;
     }
     if (type === 'customer') {
       resetCustomerBillForm();
-      cbFormDirty = false;
     } else {
       resetInvoiceForm();
-      invFormDirty = false;
     }
     $('#billPreviewCard').style.display = 'none';
     toast('Form cleared — ready for a new entry');
