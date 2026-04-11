@@ -519,6 +519,18 @@
   $('#outQty').addEventListener('input', autoCalcSaleAmt);
   $('#outRate').addEventListener('input', autoCalcSaleAmt);
 
+  // Auto-fill rate from latest Items In entry for the selected item
+  $('#outItem').addEventListener('change', () => {
+    const name = $('#outItem').value.trim().toLowerCase();
+    if (!name) return;
+    // itemsIn is ordered by createdAt desc, so first match is latest
+    const match = itemsIn.find(r => r.item.toLowerCase() === name);
+    if (match && match.rate) {
+      $('#outRate').value = match.rate;
+      autoCalcSaleAmt();
+    }
+  });
+
   $('#formItemsOut').addEventListener('submit', (e) => {
     e.preventDefault();
     const record = {
