@@ -100,6 +100,7 @@
   const navItems = $$('.nav-item');
   const pages = $$('.page');
   const titles = { dashboard:'Dashboard', 'items-in':'Items In', 'items-out':'Items Out', inventory:'Inventory', expenses:'Other Expenses', sales:'Sales', 'bill-generator':'Bill Generator', reports:'Reports', changelog:'Changelog' };
+  titles.management = 'Management';
 
   function navigate(page) {
     navItems.forEach(n => n.classList.toggle('active', n.dataset.page === page));
@@ -114,6 +115,100 @@
     if (page === 'bill-generator') renderBillGenerator();
     if (page === 'reports')   renderReport();
     if (page === 'changelog') { renderAuthLog(); renderVersionHistory(); }
+    if (page === 'management') renderManagement();
+      // ── Management Tab Logic ─────────────────────────────
+      // Utility to get/set dropdown lists in localStorage
+      function getDropdownList(key, fallback) {
+        try {
+          return JSON.parse(localStorage.getItem(key)) || fallback;
+        } catch { return fallback; }
+      }
+      function setDropdownList(key, arr) {
+        localStorage.setItem(key, JSON.stringify(arr));
+      }
+
+      // Render management page lists
+      function renderManagement() {
+        // Helper to render a list group
+        function renderList(key, ulId, datalistId) {
+          const arr = getDropdownList(key, datalistId ? Array.from($$(datalistId + ' option')).map(o => o.value) : []);
+          const ul = $(ulId);
+          ul.innerHTML = '';
+          arr.forEach((name, i) => {
+            const li = document.createElement('li');
+            li.textContent = name;
+            const btn = document.createElement('button');
+            btn.textContent = 'Remove';
+            btn.className = 'remove-btn';
+            btn.onclick = () => {
+              arr.splice(i, 1);
+              setDropdownList(key, arr);
+              if (datalistId) updateDatalist(datalistId.replace('#',''), arr);
+              updateAllDropdowns();
+              renderManagement();
+            };
+            li.appendChild(btn);
+            ul.appendChild(li);
+          });
+        }
+        renderList('itemNames', '#itemNamesList', '#itemsList');
+        renderList('suppliers', '#suppliersList', '#supplierList');
+        renderList('brands', '#brandsList', '#brandList');
+        renderList('units', '#unitsList');
+        renderList('categories', '#categoriesList');
+        renderList('persons', '#personsList');
+      }
+
+      // Update datalist in DOM
+      function updateDatalist(id, arr) {
+        const dl = document.getElementById(id);
+        if (!dl) return;
+        dl.innerHTML = arr.map(v => `<option value="${sanitize(v)}"></option>`).join('');
+      }
+
+      // Add item handlers
+      function addHandler(btnId, inputId, key, datalistId) {
+        $(btnId).addEventListener('click', () => {
+          const val = $(inputId).value.trim();
+          if (!val) return;
+          let arr = getDropdownList(key, datalistId ? Array.from($$(datalistId + ' option')).map(o => o.value) : []);
+          if (!arr.includes(val)) {
+            arr.push(val);
+            setDropdownList(key, arr);
+            if (datalistId) updateDatalist(datalistId.replace('#',''), arr);
+            updateAllDropdowns();
+            $(inputId).value = '';
+            renderManagement();
+          }
+        });
+      }
+      addHandler('#addItemNameBtn', '#newItemName', 'itemNames', '#itemsList');
+      addHandler('#addSupplierBtn', '#newSupplier', 'suppliers', '#supplierList');
+      addHandler('#addBrandBtn', '#newBrand', 'brands', '#brandList');
+      addHandler('#addUnitBtn', '#newUnit', 'units');
+      addHandler('#addCategoryBtn', '#newCategory', 'categories');
+      addHandler('#addPersonBtn', '#newPerson', 'persons');
+
+      // Update all select dropdowns in the app
+      function updateAllDropdowns() {
+        // Units
+        const units = getDropdownList('units', ['kg','gm','ltr','pcs','pkt','dozen','plate','cup']);
+        $$('#inUnit, #outUnit').forEach(sel => {
+          sel.innerHTML = units.map(u => `<option value="${sanitize(u)}">${sanitize(u)}</option>`).join('');
+        });
+        // Categories
+        const categories = getDropdownList('categories', ['Cooked','Ready-made']);
+        $$('#outCategory, #filterOutCategory').forEach(sel => {
+          sel.innerHTML = '<option value="">Category</option>' + categories.map(c => `<option value="${sanitize(c)}">${sanitize(c)}</option>`).join('');
+        });
+        // Persons
+        const persons = getDropdownList('persons', ['Pradeep','Tulesh','Babulal','Sameer']);
+        $$('#outPerson, #filterOutPerson').forEach(sel => {
+          sel.innerHTML = '<option value="">Person</option>' + persons.map(p => `<option value="${sanitize(p)}">${sanitize(p)}</option>`).join('');
+        });
+      }
+      // Call once on load
+      updateAllDropdowns();
     $('#sidebar').classList.remove('open');
     $('#sidebarOverlay').classList.remove('active');
   }

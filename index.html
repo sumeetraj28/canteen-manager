@@ -82,6 +82,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
         <span>Changelog</span>
       </a>
+      <a href="#" class="nav-item" data-page="management">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 14.5v-5h2l-3-3-3 3h2v5h2z"/></svg>
+        <span>Management</span>
+      </a>
     </nav>
     <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" title="Collapse sidebar">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
@@ -118,6 +122,48 @@
             <p class="dash-subtitle">Financial health overview at a glance</p>
           </div>
           <div style="display:flex;gap:10px;align-items:center">
+      <!-- ==================== MANAGEMENT ==================== -->
+      <section class="page" id="page-management">
+        <h2>Dropdown Management</h2>
+        <div class="dropdown-management">
+          <div class="dropdown-group">
+            <h3>Item Names</h3>
+            <input type="text" id="newItemName" placeholder="Add new item name" />
+            <button id="addItemNameBtn">Add</button>
+            <ul id="itemNamesList"></ul>
+          </div>
+          <div class="dropdown-group">
+            <h3>Suppliers</h3>
+            <input type="text" id="newSupplier" placeholder="Add new supplier" />
+            <button id="addSupplierBtn">Add</button>
+            <ul id="suppliersList"></ul>
+          </div>
+          <div class="dropdown-group">
+            <h3>Brands</h3>
+            <input type="text" id="newBrand" placeholder="Add new brand" />
+            <button id="addBrandBtn">Add</button>
+            <ul id="brandsList"></ul>
+          </div>
+          <div class="dropdown-group">
+            <h3>Units</h3>
+            <input type="text" id="newUnit" placeholder="Add new unit (e.g. kg, pcs)" />
+            <button id="addUnitBtn">Add</button>
+            <ul id="unitsList"></ul>
+          </div>
+          <div class="dropdown-group">
+            <h3>Categories</h3>
+            <input type="text" id="newCategory" placeholder="Add new category" />
+            <button id="addCategoryBtn">Add</button>
+            <ul id="categoriesList"></ul>
+          </div>
+          <div class="dropdown-group">
+            <h3>Persons</h3>
+            <input type="text" id="newPerson" placeholder="Add new person" />
+            <button id="addPersonBtn">Add</button>
+            <ul id="personsList"></ul>
+          </div>
+        </div>
+      </section>
             <select id="dashFY" class="filter-input" style="width:auto"></select>
             <button class="btn-secondary btn-sm" id="btnExportPnl">Export P&amp;L .xlsx</button>
           </div>
@@ -1516,6 +1562,19 @@
     <option value="Urad daal"></option>
     <option value="Water"></option>
     <option value="White pepper"></option>
+    <option value="Chocolate cone"></option>
+    <option value="Vanilla cone"></option>
+    <option value="2in1-cone"></option>
+    <option value="Pista cone"></option>
+    <option value="Rajwada kulfi"></option>
+    <option value="Kesar kulfi"></option>
+    <option value="Rainbow cup"></option>
+    <option value="2in1 v cup"></option>
+    <option value="Nutty roll"></option>
+    <option value="Fun chocolate"></option>
+    <option value="Biryani Rice"></option>
+    <option value="Biryani masala"></option>
+    <option value="Kewda jal"></option>
   </datalist>
   <datalist id="supplierList">
     <option value="Ankit Berlia (Ramgarh)"></option>
