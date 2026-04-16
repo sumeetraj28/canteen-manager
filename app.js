@@ -117,14 +117,37 @@
     if (page === 'changelog') { renderAuthLog(); renderVersionHistory(); }
     if (page === 'management') renderManagement();
       // ── Management Tab Logic ─────────────────────────────
-      // Utility to get/set dropdown lists in localStorage
+      // Utility to get/set dropdown lists in localStorage with error handling
       function getDropdownList(key, fallback) {
         try {
-          return JSON.parse(localStorage.getItem(key)) || fallback;
-        } catch { return fallback; }
+          const val = localStorage.getItem(key);
+          if (val === null) return fallback;
+          return JSON.parse(val);
+        } catch (e) {
+          showManagementError('Error reading saved dropdowns. Please clear your browser storage and reload.');
+          return fallback;
+        }
       }
       function setDropdownList(key, arr) {
-        localStorage.setItem(key, JSON.stringify(arr));
+        try {
+          localStorage.setItem(key, JSON.stringify(arr));
+        } catch (e) {
+          showManagementError('Error saving dropdowns. Please check your browser storage settings.');
+        }
+      }
+
+      // Show error message in Management tab
+      function showManagementError(msg) {
+        let err = document.getElementById('managementError');
+        if (!err) {
+          err = document.createElement('div');
+          err.id = 'managementError';
+          err.style.color = 'red';
+          err.style.margin = '16px 0';
+          const mgmtSection = document.getElementById('page-management');
+          if (mgmtSection) mgmtSection.insertBefore(err, mgmtSection.firstChild);
+        }
+        err.textContent = msg;
       }
 
       // Render management page lists
