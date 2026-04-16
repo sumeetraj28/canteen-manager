@@ -5,7 +5,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyBrGdtV_U4vzf8kbl8yeO7Oadq9nfQvgoA",
   authDomain: "canteen-manager-fda66.firebaseapp.com",
   projectId: "canteen-manager-fda66",
-  storageBucket: "canteen-manager-fda66.firebasestorage.app",
+  storageBucket: "canteen-manager-fda66.appspot.com",
   messagingSenderId: "874701270392",
   appId: "1:874701270392:web:4c886c610d7b35a3676c8d"
 };
