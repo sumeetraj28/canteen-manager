@@ -1,4 +1,3 @@
-})();
 /* ── Canteen Manager – App Logic (Firebase/Firestore) ── */
 (function () {
   'use strict';
