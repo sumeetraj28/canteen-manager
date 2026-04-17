@@ -1,3 +1,14 @@
+.fs-09 { font-size: .9rem !important; }
+.c-text { color: var(--text) !important; }
+.m-20-0-10 { margin: 20px 0 10px !important; }
+.m-24-0-10 { margin: 24px 0 10px !important; }
+.gap-8 { gap: 8px !important; }
+/* === Inline style replacements from index.html === */
+.mt-8 { margin-top: 8px !important; }
+.d-flex { display: flex !important; }
+.gap-10 { gap: 10px !important; }
+.align-center { align-items: center !important; }
+.w-auto { width: auto !important; }
 /* ── Manage Dropdowns Tab ─────────────────────────────── */
 .dropdown-management {
   display: flex;
