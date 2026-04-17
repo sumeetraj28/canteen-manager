@@ -74,6 +74,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h8M8 17h8M8 9h2"/></svg>
         <span>Bill Generator</span>
       </a>
+      <a href="#" class="nav-item" data-page="manage-dropdowns">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        <span>Manage Dropdowns</span>
+      </a>
       <a href="#" class="nav-item" data-page="reports">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
         <span>Reports</span>
@@ -90,7 +94,7 @@
     <div class="sidebar-footer">
       <div class="sidebar-user" id="sidebarUser"></div>
       <button id="logoutBtn" class="btn-clear">Logout</button>
-      <button id="clearDataBtn" class="btn-clear mt-8">Erase Data</button>
+      <button id="clearDataBtn" class="btn-clear" style="margin-top:8px">Erase Data</button>
     </div>
   </aside>
 
@@ -109,6 +113,48 @@
     </header>
 
     <div class="page-container">
+            <!-- ==================== MANAGE DROPDOWNS ==================== -->
+            <section class="page" id="page-manage-dropdowns">
+              <h2>Manage Dropdowns</h2>
+              <div class="dropdown-management">
+                <div class="dropdown-group">
+                  <h3>Item Names</h3>
+                  <input type="text" id="newItemName" placeholder="Add new item name" />
+                  <button id="addItemNameBtn">Add</button>
+                  <ul id="itemNamesList"></ul>
+                </div>
+                <div class="dropdown-group">
+                  <h3>Suppliers</h3>
+                  <input type="text" id="newSupplier" placeholder="Add new supplier" />
+                  <button id="addSupplierBtn">Add</button>
+                  <ul id="suppliersList"></ul>
+                </div>
+                <div class="dropdown-group">
+                  <h3>Brands</h3>
+                  <input type="text" id="newBrand" placeholder="Add new brand" />
+                  <button id="addBrandBtn">Add</button>
+                  <ul id="brandsList"></ul>
+                </div>
+                <div class="dropdown-group">
+                  <h3>Units</h3>
+                  <input type="text" id="newUnit" placeholder="Add new unit (e.g. kg, pcs)" />
+                  <button id="addUnitBtn">Add</button>
+                  <ul id="unitsList"></ul>
+                </div>
+                <div class="dropdown-group">
+                  <h3>Categories</h3>
+                  <input type="text" id="newCategory" placeholder="Add new category" />
+                  <button id="addCategoryBtn">Add</button>
+                  <ul id="categoriesList"></ul>
+                </div>
+                <div class="dropdown-group">
+                  <h3>Persons</h3>
+                  <input type="text" id="newPerson" placeholder="Add new person" />
+                  <button id="addPersonBtn">Add</button>
+                  <ul id="personsList"></ul>
+                </div>
+              </div>
+            </section>
       <!-- ==================== DASHBOARD ==================== -->
       <section class="page active" id="page-dashboard">
         <!-- Header Bar -->
@@ -117,9 +163,9 @@
             <h2 class="dash-title">Executive Dashboard</h2>
             <p class="dash-subtitle">Financial health overview at a glance</p>
           </div>
-          <div class="d-flex gap-10 align-center">
+          <div style="display:flex;gap:10px;align-items:center">
       <!-- Management tab removed -->
-            <select id="dashFY" class="filter-input w-auto"></select>
+            <select id="dashFY" class="filter-input" style="width:auto"></select>
             <button class="btn-secondary btn-sm" id="btnExportPnl">Export P&amp;L .xlsx</button>
           </div>
         </div>
@@ -208,7 +254,7 @@
         <!-- ─── Section 6: Profit & Loss Statement ─── -->
         <div class="dash-section">
           <h3 class="section-heading"><span class="section-icon">📋</span> Profit &amp; Loss Statement</h3>
-          <div class="charts-row mb-20">
+          <div class="charts-row" style="margin-bottom:20px">
             <div class="chart-card"><h3>Detailed P&amp;L (Bar + Line)</h3><canvas id="chartPnlDetailed"></canvas></div>
             <div class="chart-card"><h3>Cost Composition Split</h3><canvas id="chartPnlCostSplit"></canvas></div>
           </div>
@@ -349,14 +395,14 @@
         <div class="table-card">
           <div class="table-header">
             <h3>Month-wise Purchase Summaries</h3>
-            <div class="d-flex gap-8 align-center">
+            <div style="display:flex;gap:8px;align-items:center">
               <button class="btn-secondary btn-sm" id="btnExportItemsInSummary">Export .xlsx</button>
-              <select id="itemsInFY" class="filter-input w-auto"></select>
+              <select id="itemsInFY" class="filter-input" style="width:auto"></select>
             </div>
           </div>
 
           <!-- 1. Qty of Items purchased month wise -->
-          <h4 class="m-20-0-10 fs-09 c-text">1. Quantity of Items Purchased &mdash; Month-wise</h4>
+          <h4 style="margin:20px 0 10px;font-size:.9rem;color:var(--text)">1. Quantity of Items Purchased &mdash; Month-wise</h4>
           <div class="table-wrapper">
             <table id="tableInQtyMonthly">
               <thead>
@@ -367,7 +413,7 @@
           </div>
 
           <!-- 2. Amount of Items purchased month wise -->
-          <h4 class="m-24-0-10 fs-09 c-text">2. Amount of Items Purchased &mdash; Month-wise</h4>
+          <h4 style="margin:24px 0 10px;font-size:.9rem;color:var(--text)">2. Amount of Items Purchased &mdash; Month-wise</h4>
           <div class="table-wrapper">
             <table id="tableInAmtMonthly">
               <thead>
@@ -379,7 +425,7 @@
           </div>
 
           <!-- 3. Amount from Brands month wise -->
-          <h4 class="m-24-0-10 fs-09 c-text">3. Amount Purchased from Brands &mdash; Month-wise</h4>
+          <h4 style="margin:24px 0 10px;font-size:.9rem;color:var(--text)">3. Amount Purchased from Brands &mdash; Month-wise</h4>
           <div class="table-wrapper">
             <table id="tableInBrandMonthly">
               <thead>
@@ -391,7 +437,7 @@
           </div>
 
           <!-- 4. Amount from Suppliers month wise -->
-          <h4 class="m-24-0-10 fs-09 c-text">4. Amount Purchased from Suppliers &mdash; Month-wise</h4>
+          <h4 style="margin:24px 0 10px;font-size:.9rem;color:var(--text)">4. Amount Purchased from Suppliers &mdash; Month-wise</h4>
           <div class="table-wrapper">
             <table id="tableInSupplierMonthly">
               <thead>
@@ -476,7 +522,7 @@
         <div class="table-card">
           <div class="table-header">
             <h3>Sales History</h3>
-            <div class="d-flex gap-8 align-center">
+            <div style="display:flex;gap:8px;align-items:center">
               <button class="btn-secondary btn-sm" id="btnImportItemsOut">📥 Import .xlsx</button>
               <button class="btn-secondary btn-sm" id="btnExportItemsOut">Export .xlsx</button>
             </div>
@@ -500,14 +546,14 @@
         <div class="table-card">
           <div class="table-header">
             <h3>Month-wise Sales Summaries</h3>
-            <div class="d-flex gap-8 align-center">
+            <div style="display:flex;gap:8px;align-items:center">
               <button class="btn-secondary btn-sm" id="btnExportItemsOutSummary">Export .xlsx</button>
-              <select id="itemsOutFY" class="filter-input w-auto"></select>
+              <select id="itemsOutFY" class="filter-input" style="width:auto"></select>
             </div>
           </div>
 
           <!-- 1. Qty of Items sold month wise -->
-          <h4 class="m-20-0-10 fs-09 c-text">1. Quantity of Items Sold &mdash; Month-wise</h4>
+          <h4 style="margin:20px 0 10px;font-size:.9rem;color:var(--text)">1. Quantity of Items Sold &mdash; Month-wise</h4>
           <div class="table-wrapper">
             <table id="tableOutQtyMonthly">
               <thead>
@@ -518,7 +564,7 @@
           </div>
 
           <!-- 2. Amount of Items sold month wise -->
-          <h4 class="m-24-0-10 fs-09 c-text">2. Amount of Items Sold &mdash; Month-wise</h4>
+          <h4 style="margin:24px 0 10px;font-size:.9rem;color:var(--text)">2. Amount of Items Sold &mdash; Month-wise</h4>
           <div class="table-wrapper">
             <table id="tableOutAmtMonthly">
               <thead>
@@ -530,7 +576,7 @@
           </div>
 
           <!-- 3. Amount from Brands month wise -->
-          <h4 class="m-24-0-10 fs-09 c-text">3. Amount of Items Sold from Brands &mdash; Month-wise</h4>
+          <h4 style="margin:24px 0 10px;font-size:.9rem;color:var(--text)">3. Amount of Items Sold from Brands &mdash; Month-wise</h4>
           <div class="table-wrapper">
             <table id="tableOutBrandMonthly">
               <thead>
@@ -542,7 +588,7 @@
           </div>
 
           <!-- 4. Amount from Suppliers month wise -->
-          <h4 class="m-24-0-10 fs-09 c-text">4. Amount of Items Sold from Suppliers &mdash; Month-wise</h4>
+          <h4 style="margin:24px 0 10px;font-size:.9rem;color:var(--text)">4. Amount of Items Sold from Suppliers &mdash; Month-wise</h4>
           <div class="table-wrapper">
             <table id="tableOutSupplierMonthly">
               <thead>
@@ -712,7 +758,7 @@
             <h3>Month-wise Category Expense</h3>
             <div style="display:flex;gap:8px;align-items:center">
               <button class="btn-secondary btn-sm" id="btnExportExpMonthly">Export .xlsx</button>
-              <select id="expMonthFY" class="filter-input w-auto"></select>
+              <select id="expMonthFY" class="filter-input" style="width:auto"></select>
             </div>
           </div>
           <div class="table-wrapper">
@@ -777,7 +823,7 @@
         <div class="table-card">
           <div class="table-header">
             <h3>Sales Records</h3>
-            <div class="d-flex gap-8 align-center">
+            <div style="display:flex;gap:8px;align-items:center">
               <button class="btn-secondary btn-sm" id="btnImportSales">📥 Import .xlsx</button>
               <button class="btn-secondary btn-sm" id="btnExportSales">Export .xlsx</button>
               <button class="btn-sm" id="clearFiltersSales">Clear Filters</button>
@@ -817,9 +863,9 @@
         <div class="table-card">
           <div class="table-header">
             <h3>Sale Type &mdash; Month-wise Summary</h3>
-            <div class="d-flex gap-8 align-center">
+            <div style="display:flex;gap:8px;align-items:center">
               <button class="btn-secondary btn-sm" id="btnExportSaleTypeSummary">Export .xlsx</button>
-              <select id="salesFY" class="filter-input w-auto"></select>
+              <select id="salesFY" class="filter-input" style="width:auto"></select>
             </div>
           </div>
           <div class="table-wrapper">
