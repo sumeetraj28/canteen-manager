@@ -11,9 +11,9 @@
   function fmtDate(d) { if (!d) return ''; const p = d.split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : sanitize(d); }
   function today() { return new Date().toISOString().slice(0, 10); }
   function sanitize(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+	const div = document.createElement('div');
+	div.textContent = str;
+	return div.innerHTML;
   }
 
   // ── Generic table sorting ─────────────────────────
@@ -100,7 +100,6 @@
   const navItems = $$('.nav-item');
   const pages = $$('.page');
   const titles = { dashboard:'Dashboard', 'items-in':'Items In', 'items-out':'Items Out', inventory:'Inventory', expenses:'Other Expenses', sales:'Sales', 'bill-generator':'Bill Generator', reports:'Reports', changelog:'Changelog' };
-    titles['manage-dropdowns'] = 'Manage Dropdowns';
   // Management tab removed
 
   function navigate(page) {
@@ -116,74 +115,8 @@
     if (page === 'bill-generator') renderBillGenerator();
     if (page === 'reports')   renderReport();
     if (page === 'changelog') { renderAuthLog(); renderVersionHistory(); }
-    if (page === 'manage-dropdowns') renderManageDropdowns();
   // ── Manage Dropdowns Tab Logic ─────────────────────────────
-  const dropdownKeys = ['itemNames', 'suppliers', 'brands', 'units', 'categories', 'persons'];
-  function getDropdownList(key) {
-    try {
-      return JSON.parse(localStorage.getItem(key)) || [];
-    } catch { return []; }
-  }
-  function setDropdownList(key, arr) {
-    localStorage.setItem(key, JSON.stringify(arr));
-  }
-  function renderManageDropdowns() {
-    function renderList(key, ulId) {
-      const arr = getDropdownList(key);
-      const ul = $(ulId);
-      ul.innerHTML = '';
-      arr.forEach((name, i) => {
-        const li = document.createElement('li');
-        li.textContent = name;
-        const btn = document.createElement('button');
-        btn.textContent = 'Remove';
-        btn.className = 'remove-btn';
-        btn.onclick = () => {
-          arr.splice(i, 1);
-          setDropdownList(key, arr);
-          renderManageDropdowns();
-        };
-        li.appendChild(btn);
-        ul.appendChild(li);
-      });
-    }
-    renderList('itemNames', 'itemNamesList');
-    renderList('suppliers', 'suppliersList');
-    renderList('brands', 'brandsList');
-    renderList('units', 'unitsList');
-    renderList('categories', 'categoriesList');
-    renderList('persons', 'personsList');
-  }
-  function addDropdownHandlers() {
-    [
-      ['#addItemNameBtn', '#newItemName', 'itemNames', 'itemNamesList'],
-      ['#addSupplierBtn', '#newSupplier', 'suppliers', 'suppliersList'],
-      ['#addBrandBtn', '#newBrand', 'brands', 'brandsList'],
-      ['#addUnitBtn', '#newUnit', 'units', 'unitsList'],
-      ['#addCategoryBtn', '#newCategory', 'categories', 'categoriesList'],
-      ['#addPersonBtn', '#newPerson', 'persons', 'personsList']
-    ].forEach(([btnId, inputId, key, ulId]) => {
-      const btn = document.querySelector(btnId);
-      if (btn) {
-        btn.onclick = () => {
-          const val = document.querySelector(inputId).value.trim();
-          if (!val) return;
-          let arr = getDropdownList(key);
-          if (!arr.includes(val)) {
-            arr.push(val);
-            setDropdownList(key, arr);
-            document.querySelector(inputId).value = '';
-            renderManageDropdowns();
-          }
-        };
-      }
-    });
-  }
-  // Initialize Manage Dropdowns tab on page load
-  document.addEventListener('DOMContentLoaded', () => {
-    renderManageDropdowns();
-    addDropdownHandlers();
-  });
+  // Dropdown management logic removed as per user request.
 
   navItems.forEach(n => n.addEventListener('click', (e) => { e.preventDefault(); navigate(n.dataset.page); }));
   $('#menuToggle').addEventListener('click', () => {
@@ -3634,4 +3567,8 @@
       });
     });
   })();
+
+})();
+
+
 
