@@ -1,31 +1,3 @@
-/* === Inline style replacements for filterLogCategory, Import Modal, and Import Preview === */
-.w-170 { width: 170px !important; }
-.w-200 { width: 200px !important; }
-.mb-12 { margin-bottom: 12px !important; }
-.mb-16 { margin-bottom: 16px !important; }
-.fs-088 { font-size: .88rem !important; }
-.fs-078 { font-size: .78rem !important; }
-.fs-2rem { font-size: 2rem !important; }
-.text-light { color: var(--text-light) !important; }
-.d-none { display: none !important; }
-.mt-16 { margin-top: 16px !important; }
-.fw-600 { font-weight: 600 !important; }
-.mb-8 { margin-bottom: 8px !important; }
-.maxh-240 { max-height: 240px !important; }
-.ovy-auto { overflow-y: auto !important; }
-.justify-end { justify-content: flex-end !important; }
-/* === Inline style replacements for Changelog stat-cards === */
-.stat-downloads { border-left-color: #8b5cf6 !important; background: #f5f3ff !important; }
-.stat-imports { border-left-color: #047857 !important; background: #ecfdf5 !important; }
-.stat-exports { border-left-color: var(--primary) !important; background: #eef2ff !important; }
-.stat-erases { border-left-color: #b91c1c !important; background: #fef2f2 !important; }
-/* === Inline style replacements for Bill Preview and Report Period Selector === */
-.d-none { display: none !important; }
-.mb-24 { margin-bottom: 24px !important; }
-.m-0 { margin: 0 !important; }
-.minw-150 { min-width: 150px !important; }
-.minw-140 { min-width: 140px !important; }
-.w-100 { width: 100% !important; }
 .fs-09 { font-size: .9rem !important; }
 .c-text { color: var(--text) !important; }
 .m-20-0-10 { margin: 20px 0 10px !important; }

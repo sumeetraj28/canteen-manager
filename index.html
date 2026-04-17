@@ -323,7 +323,7 @@
         <div class="table-card">
           <div class="table-header">
             <h3>Purchase History</h3>
-            <div class="d-flex gap-8 align-center">
+            <div style="display:flex;gap:8px;align-items:center">
               <button class="btn-secondary btn-sm" id="btnImportItemsIn">📥 Import .xlsx</button>
               <button class="btn-secondary btn-sm" id="btnExportItemsIn">Export .xlsx</button>
             </div>
@@ -554,7 +554,7 @@
           </div>
 
           <!-- 5. Amount per Category month wise -->
-          <h4 class="m-24-0-10 fs-09 c-text">5. Amount of Items Sold per Category &mdash; Month-wise</h4>
+          <h4 style="margin:24px 0 10px;font-size:.9rem;color:var(--text)">5. Amount of Items Sold per Category &mdash; Month-wise</h4>
           <div class="table-wrapper">
             <table id="tableOutCategoryMonthly">
               <thead>
@@ -566,7 +566,7 @@
           </div>
 
           <!-- 6. Count per Person month wise -->
-          <h4 class="m-24-0-10 fs-09 c-text">6. Number of Times Each Person Takes Out Items &mdash; Month-wise</h4>
+          <h4 style="margin:24px 0 10px;font-size:.9rem;color:var(--text)">6. Number of Times Each Person Takes Out Items &mdash; Month-wise</h4>
           <div class="table-wrapper">
             <table id="tableOutPersonCountMonthly">
               <thead>
@@ -578,7 +578,7 @@
           </div>
 
           <!-- 7. Amount per Person month wise -->
-          <h4 class="m-24-0-10 fs-09 c-text">7. Amount of Items Each Person Takes &mdash; Month-wise</h4>
+          <h4 style="margin:24px 0 10px;font-size:.9rem;color:var(--text)">7. Amount of Items Each Person Takes &mdash; Month-wise</h4>
           <div class="table-wrapper">
             <table id="tableOutPersonAmtMonthly">
               <thead>
@@ -675,7 +675,7 @@
         <div class="table-card">
           <div class="table-header">
             <h3>Expense Records</h3>
-            <div class="d-flex gap-8 align-center">
+            <div style="display:flex;gap:8px;align-items:center">
               <button class="btn-secondary btn-sm" id="btnImportExpenses">📥 Import .xlsx</button>
               <button class="btn-secondary btn-sm" id="btnExportExpenses">Export .xlsx</button>
               <button class="btn-sm" id="clearFiltersExp">Clear Filters</button>
@@ -710,7 +710,7 @@
         <div class="table-card">
           <div class="table-header">
             <h3>Month-wise Category Expense</h3>
-            <div class="d-flex gap-8 align-center">
+            <div style="display:flex;gap:8px;align-items:center">
               <button class="btn-secondary btn-sm" id="btnExportExpMonthly">Export .xlsx</button>
               <select id="expMonthFY" class="filter-input w-auto"></select>
             </div>
@@ -862,7 +862,7 @@
               </div>
               <div class="form-group">
                 <label for="cbBillNo">Bill No.</label>
-                <input type="text" id="cbBillNo" readonly tabindex="-1" class="bg-card cursor-default" placeholder="Auto-assigned on save" />
+                <input type="text" id="cbBillNo" readonly tabindex="-1" style="background:var(--card-bg);cursor:default" placeholder="Auto-assigned on save" />
               </div>
               <div class="form-group">
                 <label for="cbCustomer">Customer Name</label>
@@ -874,7 +874,7 @@
               </div>
             </div>
 
-            <h4 class="m-18-0-8">Line Items</h4>
+            <h4 style="margin:18px 0 8px">Line Items</h4>
             <div id="cbItems">
               <div class="bill-item-row">
                 <input type="text" placeholder="Item name" class="cb-item-name" required />
@@ -884,9 +884,9 @@
                 <button type="button" class="btn-sm btn-danger cb-remove-row" title="Remove">&times;</button>
               </div>
             </div>
-            <button type="button" class="btn-secondary btn-sm mt-8" id="cbAddRow">+ Add Item</button>
+            <button type="button" class="btn-secondary btn-sm" id="cbAddRow" style="margin-top:8px">+ Add Item</button>
 
-            <div class="form-grid mt-16">
+            <div class="form-grid" style="margin-top:16px">
               <div class="form-group">
                 <label>Subtotal</label>
                 <input type="text" id="cbSubtotal" readonly tabindex="-1" value="₹0" />
@@ -897,27 +897,27 @@
               </div>
               <div class="form-group">
                 <label>Grand Total</label>
-                <input type="text" id="cbGrandTotal" readonly tabindex="-1" value="₹0" class="fw-700 fs-11em" />
+                <input type="text" id="cbGrandTotal" readonly tabindex="-1" value="₹0" style="font-weight:700;font-size:1.1em" />
               </div>
             </div>
 
-            <div class="form-group full-span mt-8">
+            <div class="form-group full-span" style="margin-top:8px">
               <label for="cbNotes">Notes / Remarks</label>
               <input type="text" id="cbNotes" placeholder="Any additional remarks" />
             </div>
 
-            <div class="d-flex gap-10 mt-16 flex-wrap">
+            <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
               <button type="button" class="btn-primary" id="cbSave">💾 Save</button>
               <button type="button" class="btn-secondary" id="cbPreview">👁 Preview</button>
               <button type="button" class="btn-secondary" id="cbDownloadPdf">⬇ PDF</button>
               <button type="button" class="btn-secondary" id="cbPrint">🖨 Print</button>
-              <button type="button" class="btn-secondary ml-auto" id="cbNew">+ Create New</button>
+              <button type="button" class="btn-secondary" id="cbNew" style="margin-left:auto">+ Create New</button>
             </div>
           </form>
         </div>
 
         <!-- ── Invoice Form ── -->
-        <div id="billInvoiceForm" class="form-card d-none">
+        <div id="billInvoiceForm" class="form-card" style="display:none">
           <h3>Invoice</h3>
           <form id="formInvoiceBill">
             <div class="form-grid">
@@ -927,7 +927,7 @@
               </div>
               <div class="form-group">
                 <label for="invBillNo">Invoice No.</label>
-                <input type="text" id="invBillNo" readonly tabindex="-1" class="bg-card cursor-default" placeholder="Auto-assigned on save" />
+                <input type="text" id="invBillNo" readonly tabindex="-1" style="background:var(--card-bg);cursor:default" placeholder="Auto-assigned on save" />
               </div>
               <div class="form-group">
                 <label for="invDueDate">Due Date (optional)</label>
@@ -947,7 +947,7 @@
               </div>
             </div>
 
-            <h4 class="m-18-0-8">Line Items</h4>
+            <h4 style="margin:18px 0 8px">Line Items</h4>
             <div id="invItems">
               <div class="bill-item-row">
                 <input type="text" placeholder="Item / Service" class="inv-item-name" required />
@@ -957,9 +957,9 @@
                 <button type="button" class="btn-sm btn-danger inv-remove-row" title="Remove">&times;</button>
               </div>
             </div>
-            <button type="button" class="btn-secondary btn-sm mt-8" id="invAddRow">+ Add Item</button>
+            <button type="button" class="btn-secondary btn-sm" id="invAddRow" style="margin-top:8px">+ Add Item</button>
 
-            <div class="form-grid mt-16">
+            <div class="form-grid" style="margin-top:16px">
               <div class="form-group">
                 <label>Subtotal</label>
                 <input type="text" id="invSubtotal" readonly tabindex="-1" value="₹0" />
@@ -978,11 +978,11 @@
               </div>
               <div class="form-group">
                 <label>Grand Total</label>
-                <input type="text" id="invGrandTotal" readonly tabindex="-1" value="₹0" class="fw-700 fs-11em" />
+                <input type="text" id="invGrandTotal" readonly tabindex="-1" value="₹0" style="font-weight:700;font-size:1.1em" />
               </div>
             </div>
 
-            <div class="form-grid mt-8">
+            <div class="form-grid" style="margin-top:8px">
               <div class="form-group">
                 <label for="invPaymentMode">Payment Mode</label>
                 <select id="invPaymentMode">
@@ -999,18 +999,18 @@
               </div>
             </div>
 
-            <div class="d-flex gap-10 mt-16 flex-wrap">
+            <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
               <button type="button" class="btn-primary" id="invSave">💾 Save</button>
               <button type="button" class="btn-secondary" id="invPreview">👁 Preview</button>
               <button type="button" class="btn-secondary" id="invDownloadPdf">⬇ PDF</button>
               <button type="button" class="btn-secondary" id="invPrint">🖨 Print</button>
-              <button type="button" class="btn-secondary ml-auto" id="invNew">+ Create New</button>
+              <button type="button" class="btn-secondary" id="invNew" style="margin-left:auto">+ Create New</button>
             </div>
           </form>
         </div>
 
         <!-- ── Bill Preview Area ── -->
-        <div class="table-card d-none" id="billPreviewCard">
+        <div class="table-card" id="billPreviewCard" style="display:none">
           <div class="table-header">
             <h3>Bill Preview</h3>
           </div>
@@ -1033,7 +1033,7 @@
         <div class="table-card">
           <div class="table-header">
             <h3>Bill History</h3>
-            <div class="d-flex gap-8 align-center">
+            <div style="display:flex;gap:8px;align-items:center">
               <button class="btn-secondary btn-sm" id="btnExportBills">Export .xlsx</button>
               <button class="btn-sm" id="clearFiltersBills">Clear Filters</button>
             </div>
@@ -1082,11 +1082,11 @@
         </div>
 
         <!-- Period Selector Bar -->
-        <div class="table-card rpt-controls mb-24">
+        <div class="table-card rpt-controls" style="margin-bottom:24px">
           <div class="rpt-selector-row">
-            <div class="form-group m-0 minw-150">
+            <div class="form-group" style="margin:0;min-width:150px">
               <label for="rptPeriod">Report Period</label>
-              <select id="rptPeriod" class="filter-input w-100">
+              <select id="rptPeriod" class="filter-input" style="width:100%">
                 <option value="this-week">This Week</option>
                 <option value="last-week">Last Week</option>
                 <option value="this-month" selected>This Month</option>
@@ -1096,13 +1096,13 @@
                 <option value="custom">Custom Date Range</option>
               </select>
             </div>
-            <div class="form-group m-0 minw-140 d-none" id="rptCustomFrom">
+            <div class="form-group" style="margin:0;min-width:140px;display:none" id="rptCustomFrom">
               <label for="rptFrom">From Date</label>
-              <input type="date" id="rptFrom" class="filter-input w-100" />
+              <input type="date" id="rptFrom" class="filter-input" style="width:100%" />
             </div>
-            <div class="form-group m-0 minw-140 d-none" id="rptCustomTo">
+            <div class="form-group" style="margin:0;min-width:140px;display:none" id="rptCustomTo">
               <label for="rptTo">To Date</label>
-              <input type="date" id="rptTo" class="filter-input w-100" />
+              <input type="date" id="rptTo" class="filter-input" style="width:100%" />
             </div>
             <div class="rpt-btn-group">
               <button class="btn-primary btn-sm" id="btnGenReport">Generate Report</button>
@@ -1113,7 +1113,7 @@
         </div>
 
         <!-- Report Output (printable area) -->
-        <div id="reportOutput" class="d-none">
+        <div id="reportOutput" style="display:none">
 
           <!-- Section 1: Executive Summary KPIs -->
           <div class="dash-section">
@@ -1220,11 +1220,11 @@
           <div class="stat-card card-blue"><div class="stat-icon">📋</div><div><span class="stat-label">Total Actions</span><span class="stat-value" id="statTotalActions">0</span></div></div>
           <div class="stat-card card-green"><div class="stat-icon">🔑</div><div><span class="stat-label">Logins</span><span class="stat-value" id="statLogins">0</span></div></div>
           <div class="stat-card card-orange"><div class="stat-icon">✏️</div><div><span class="stat-label">Edits</span><span class="stat-value" id="statEdits">0</span></div></div>
-          <div class="stat-card stat-downloads"><div class="stat-icon">📄</div><div><span class="stat-label">Downloads</span><span class="stat-value" id="statDownloads">0</span></div></div>
-          <div class="stat-card stat-imports"><div class="stat-icon">📥</div><div><span class="stat-label">Imports</span><span class="stat-value" id="statImports">0</span></div></div>
-          <div class="stat-card stat-exports"><div class="stat-icon">📤</div><div><span class="stat-label">Exports</span><span class="stat-value" id="statExports">0</span></div></div>
+          <div class="stat-card" style="border-left-color:#8b5cf6;background:#f5f3ff"><div class="stat-icon">📄</div><div><span class="stat-label">Downloads</span><span class="stat-value" id="statDownloads">0</span></div></div>
+          <div class="stat-card" style="border-left-color:#047857;background:#ecfdf5"><div class="stat-icon">📥</div><div><span class="stat-label">Imports</span><span class="stat-value" id="statImports">0</span></div></div>
+          <div class="stat-card" style="border-left-color:var(--primary);background:#eef2ff"><div class="stat-icon">📤</div><div><span class="stat-label">Exports</span><span class="stat-value" id="statExports">0</span></div></div>
           <div class="stat-card card-red"><div class="stat-icon">🗑️</div><div><span class="stat-label">Deletes</span><span class="stat-value" id="statDeletes">0</span></div></div>
-          <div class="stat-card stat-erases"><div class="stat-icon">🧹</div><div><span class="stat-label">Erases</span><span class="stat-value" id="statErases">0</span></div></div>
+          <div class="stat-card" style="border-left-color:#b91c1c;background:#fef2f2"><div class="stat-icon">🧹</div><div><span class="stat-label">Erases</span><span class="stat-value" id="statErases">0</span></div></div>
         </div>
 
         <!-- Filters -->
@@ -1234,7 +1234,7 @@
             <button class="btn-secondary btn-sm" id="btnExportAuthLog">Export .xlsx</button>
           </div>
           <div class="filter-row">
-            <select class="filter-input w-170" id="filterLogCategory">
+            <select class="filter-input" id="filterLogCategory" style="width:170px">
               <option value="">All Categories</option>
               <option value="login">🔑 Login / Logout</option>
               <option value="edit">✏️ Edits</option>
@@ -1244,7 +1244,7 @@
               <option value="import">📥 Imports</option>
               <option value="erase">🧹 Erases</option>
             </select>
-            <input type="text" class="filter-input w-200" id="filterLogUser" placeholder="Filter by user…">
+            <input type="text" class="filter-input" id="filterLogUser" placeholder="Filter by user…" style="width:200px">
             <input type="date" class="filter-input" id="filterLogFrom" title="From date">
             <input type="date" class="filter-input" id="filterLogTo" title="To date">
             <button class="btn-secondary btn-sm" id="clearFiltersLog">Clear</button>
@@ -1279,19 +1279,19 @@
         <button class="modal-close" id="importModalClose">&times;</button>
       </div>
       <div class="modal-body">
-        <p class="mb-12 fs-088 text-light">Upload an Excel file (.xlsx) to bulk-import records. The file must match the expected column format.</p>
-        <button class="btn-secondary btn-sm mb-16" id="btnDownloadSample">📄 Download Sample Template</button>
+        <p style="margin-bottom:12px;font-size:.88rem;color:var(--text-light)">Upload an Excel file (.xlsx) to bulk-import records. The file must match the expected column format.</p>
+        <button class="btn-secondary btn-sm" id="btnDownloadSample" style="margin-bottom:16px">📄 Download Sample Template</button>
         <div class="import-dropzone" id="importDropzone">
-          <input type="file d-none" id="importFileInput" accept=".xlsx,.xls" />
+          <input type="file" id="importFileInput" accept=".xlsx,.xls" style="display:none" />
           <div class="dropzone-content">
-            <span class="fs-2rem">📂</span>
+            <span style="font-size:2rem">📂</span>
             <p>Drag & drop your .xlsx file here</p>
-            <p class="fs-078 text-light">or click to browse</p>
+            <p style="font-size:.78rem;color:var(--text-light)">or click to browse</p>
           </div>
         </div>
-        <div id="importPreview" class="d-none mt-16">
-          <p class="fw-600 mb-8"><span id="importRowCount">0</span> rows found</p>
-          <div class="table-wrapper maxh-240 ovy-auto">
+        <div id="importPreview" style="display:none;margin-top:16px">
+          <p style="font-weight:600;margin-bottom:8px"><span id="importRowCount">0</span> rows found</p>
+          <div class="table-wrapper" style="max-height:240px;overflow-y:auto">
             <table id="importPreviewTable"><thead></thead><tbody></tbody></table>
           </div>
           <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
@@ -1349,7 +1349,7 @@
           <input type="password" id="erasePassword" class="filter-input" style="width:100%" placeholder="Enter erase password" />
         </div>
         <p id="eraseStatus" style="font-size:.82rem;margin-top:10px;color:var(--text-light);min-height:1.2em"></p>
-          <div class="d-flex gap-8 mt-16 justify-end">
+        <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
           <button class="btn-secondary btn-sm" id="btnEraseCancel">Cancel</button>
           <button class="btn-primary btn-sm" id="btnEraseConfirm" style="background:var(--red);border-color:var(--red)">🗑️ Erase Data</button>
         </div>
